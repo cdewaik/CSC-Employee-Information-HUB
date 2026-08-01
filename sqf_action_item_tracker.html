@@ -1,0 +1,630 @@
+<!--
+  SQF Action Item Tracker — Container Supply Company
+  Populated from "Action Item Lists" (visible program-owner tabs).
+  Data persists via the artifact shared storage API (shared across everyone who opens it).
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ink:#182231; --ink-soft:#3a4757; --muted:#6b7787; --line:#dbe1e8; --line-soft:#eaeef3;
+    --surface:#ffffff; --canvas:#f2f4f7; --canvas-2:#e8ecf1;
+    --complete:#147d51; --complete-bg:#e4f4ec;
+    --progress:#9a5b06; --progress-bg:#fbeed6;
+    --notstarted:#5a6675; --notstarted-bg:#e9edf2;
+    --risk:#b3400f; --risk-bg:#fbe6dc;
+    --overdue:#a5192a; --overdue-bg:#fadde1;
+    --signoff:#5b3a86; --signoff-bg:#efe8f7;
+    --accent:#14603f; --milestone:#0b3a5c;
+    --radius:8px; --shadow:0 1px 2px rgba(24,34,49,.06),0 4px 14px rgba(24,34,49,.05);
+    --shadow-lg:0 10px 40px rgba(24,34,49,.20); --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; }
+  body { font-family:'Inter',system-ui,sans-serif; color:var(--ink); background:var(--canvas); -webkit-font-smoothing:antialiased; line-height:1.45; }
+  .wrap { max-width:1280px; margin:0 auto; padding:22px 20px 60px; }
+
+  .masthead { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; border-bottom:2px solid var(--ink); padding-bottom:16px; }
+  .brandline { font:500 11px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:9px; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(24px,3.4vw,34px); letter-spacing:-.015em; margin:0; line-height:1.02; }
+  .subtitle { color:var(--ink-soft); font-size:13.5px; margin-top:6px; max-width:60ch; }
+  .milestone-card { background:var(--ink); color:#fff; border-radius:var(--radius); padding:13px 17px; min-width:210px; box-shadow:var(--shadow); }
+  .milestone-card .lbl { font:500 10px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:#9db0c4; }
+  .milestone-card .date { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; margin-top:4px; }
+  .milestone-card .days { font-size:12px; color:#b9c6d4; margin-top:2px; }
+
+  .stats { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:20px 0; }
+  .stat { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:13px 15px; cursor:pointer; transition:border-color .12s,transform .12s,box-shadow .12s; text-align:left; }
+  .stat:hover { border-color:var(--ink-soft); transform:translateY(-1px); box-shadow:var(--shadow); }
+  .stat.active { border-color:var(--ink); box-shadow:0 0 0 1px var(--ink); }
+  .stat .num { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:27px; line-height:1; }
+  .stat .cap { font:500 10.5px/1.2 var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-top:7px; }
+  .stat .bar { height:3px; border-radius:2px; margin-top:10px; background:var(--line-soft); overflow:hidden; }
+  .stat .bar>span { display:block; height:100%; }
+  .stat.s-total .num{color:var(--ink);} 
+  .stat.s-done .num{color:var(--complete);} .stat.s-done .bar>span{background:var(--complete);}
+  .stat.s-prog .num{color:var(--progress);} .stat.s-prog .bar>span{background:var(--progress);}
+  .stat.s-todo .num{color:var(--notstarted);} .stat.s-todo .bar>span{background:var(--notstarted);}
+  .stat.s-risk .num{color:var(--risk);} .stat.s-risk .bar>span{background:var(--risk);}
+
+  .progress-row { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 17px; margin-bottom:18px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  .progress-row .track { flex:1; min-width:220px; height:12px; border-radius:7px; background:var(--canvas-2); overflow:hidden; display:flex; }
+  .progress-row .track>span { height:100%; }
+  .seg-done{background:var(--complete);} .seg-prog{background:var(--progress);}
+  .progress-row .pct { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; }
+  .progress-row .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-soft); }
+  .progress-row .legend i { width:9px; height:9px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:middle; }
+
+  .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .toolbar .grow { flex:1; min-width:160px; }
+  input,select,textarea { font-family:inherit; font-size:13.5px; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:8px 10px; width:100%; }
+  input:focus,select:focus,textarea:focus { outline:2px solid var(--milestone); outline-offset:1px; border-color:var(--milestone); }
+  select { cursor:pointer; }
+  .filter-field { min-width:150px; }
+  label.field-lbl { display:block; font:500 10.5px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:5px; }
+  button { font-family:inherit; cursor:pointer; border:none; border-radius:6px; }
+  .btn-primary { background:var(--ink); color:#fff; font-weight:600; font-size:13.5px; padding:9px 16px; transition:background .12s; }
+  .btn-primary:hover { background:#0e1927; }
+  .btn-ghost { background:var(--surface); color:var(--ink); border:1px solid var(--line); font-weight:500; font-size:13px; padding:8px 13px; }
+  .btn-ghost:hover { border-color:var(--ink-soft); }
+  .btn-ghost.danger:hover { border-color:var(--overdue); color:var(--overdue); }
+
+  .table-shell { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .table-scroll { overflow-x:auto; border-radius:var(--radius); }
+  table { width:100%; border-collapse:collapse; min-width:1040px; }
+  thead th { text-align:left; font:600 10.5px/1.2 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); background:var(--canvas); padding:11px 14px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  tbody td { padding:13px 14px; border-bottom:1px solid var(--line-soft); font-size:13.5px; vertical-align:top; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr { transition:background .1s; }
+  tbody tr:hover { background:#f8fafc; }
+  .cell-item { font-weight:500; color:var(--ink); max-width:340px; min-width:240px; }
+  .cell-item .sub { font-size:12px; color:var(--muted); margin-top:6px; padding-left:10px; border-left:2px solid var(--line); }
+  .cell-item .sub b { color:var(--ink-soft); font-weight:600; }
+  .cell-doc { min-width:150px; }
+  .code { font:500 12px var(--mono); color:var(--milestone); background:var(--canvas); padding:2px 6px; border-radius:4px; white-space:nowrap; }
+  .cell-doc .prog { font-size:12px; color:var(--ink-soft); margin-top:5px; }
+  .owner-tag { font-size:13px; white-space:nowrap; }
+  .date-cell { font:500 13px var(--mono); white-space:nowrap; }
+  .date-cell.none { color:var(--muted); font-style:italic; font-family:'Inter'; font-weight:400; }
+
+  .pill { display:inline-flex; align-items:center; gap:5px; font:600 11px var(--mono); letter-spacing:.03em; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+  .pill::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .pill.complete{color:var(--complete);background:var(--complete-bg);}
+  .pill.progress{color:var(--progress);background:var(--progress-bg);}
+  .pill.notstarted{color:var(--notstarted);background:var(--notstarted-bg);}
+
+  .flag { display:inline-flex; align-items:center; font:600 10.5px var(--mono); letter-spacing:.03em; padding:3px 8px; border-radius:5px; white-space:nowrap; }
+  .flag.ok{color:var(--complete);background:var(--complete-bg);}
+  .flag.sched{color:var(--milestone);background:#e2ecf3;}
+  .flag.needs{color:var(--notstarted);background:var(--notstarted-bg);}
+  .flag.risk{color:var(--risk);background:var(--risk-bg);}
+  .flag.risk-ok{color:var(--progress);background:var(--progress-bg);}
+  .flag.overdue{color:var(--overdue);background:var(--overdue-bg);}
+
+  .signoff { min-width:120px; }
+  .signoff .who { display:inline-flex; align-items:center; gap:5px; font:600 12px var(--mono); color:var(--signoff); background:var(--signoff-bg); padding:3px 9px; border-radius:20px; }
+  .signoff .when { font-size:11px; color:var(--muted); margin-top:4px; }
+  .signoff .btn-sign { background:transparent; border:1px dashed var(--line); border-radius:6px; padding:5px 10px; font-size:12px; color:var(--ink-soft); }
+  .signoff .btn-sign:hover { border-color:var(--signoff); color:var(--signoff); border-style:solid; }
+
+  .row-actions { display:flex; gap:6px; }
+  .icon-btn { background:transparent; border:1px solid var(--line); border-radius:5px; padding:5px 8px; font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+  .icon-btn:hover { border-color:var(--ink-soft); color:var(--ink); }
+  .icon-btn.del:hover { border-color:var(--overdue); color:var(--overdue); }
+
+  .empty { text-align:center; padding:54px 24px; }
+  .empty h3 { font-family:'Space Grotesk',sans-serif; font-size:18px; margin:0 0 6px; }
+  .empty p { color:var(--muted); font-size:13.5px; margin:0 auto 18px; max-width:44ch; }
+
+  .overlay { position:fixed; inset:0; background:rgba(16,24,36,.42); display:none; align-items:flex-start; justify-content:center; padding:34px 16px; overflow-y:auto; z-index:50; }
+  .overlay.open { display:flex; }
+  .modal { background:var(--surface); border-radius:10px; width:100%; max-width:580px; box-shadow:var(--shadow-lg); animation:pop .16s ease; }
+  @keyframes pop { from{transform:translateY(6px);opacity:0;} to{transform:none;opacity:1;} }
+  .modal-head { padding:18px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  .modal-head h2 { font-family:'Space Grotesk',sans-serif; font-size:18px; margin:0; }
+  .modal-head .x { background:transparent; font-size:20px; color:var(--muted); padding:2px 8px; line-height:1; }
+  .modal-body { padding:20px 22px; }
+  .fgrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .fgrid .full { grid-column:1/-1; }
+  .fitem .req { color:var(--overdue); }
+  .hint { font-size:11.5px; color:var(--muted); margin-top:5px; }
+  .err { font-size:11.5px; color:var(--overdue); margin-top:5px; display:none; }
+  .err.show { display:block; }
+  input.invalid,textarea.invalid { border-color:var(--overdue); }
+  textarea { resize:vertical; min-height:62px; }
+  .expl-block { grid-column:1/-1; border:1px solid var(--risk); background:var(--risk-bg); border-radius:8px; padding:15px; display:none; }
+  .expl-block.show { display:block; }
+  .expl-block .banner { display:flex; align-items:center; gap:8px; font:600 12px var(--mono); color:var(--risk); margin-bottom:12px; }
+  .expl-block textarea { background:#fff; }
+  .expl-block .fitem+.fitem { margin-top:12px; }
+  .signoff-block { grid-column:1/-1; border:1px solid var(--line); border-radius:8px; padding:15px; background:var(--canvas); }
+  .signoff-block .banner { font:600 11px var(--mono); letter-spacing:.05em; text-transform:uppercase; color:var(--signoff); margin-bottom:12px; }
+  .signoff-block .fgrid { gap:14px; }
+  .modal-foot { padding:15px 22px 20px; display:flex; justify-content:flex-end; gap:10px; }
+
+  .datastrip { margin-top:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); }
+  .datastrip .note { display:flex; align-items:center; gap:7px; }
+  .datastrip .dot { width:7px; height:7px; border-radius:50%; background:var(--complete); }
+
+  @media (max-width:860px) {
+    .stats { grid-template-columns:repeat(2,1fr); }
+    .stat.s-total { grid-column:1/-1; }
+    .fgrid { grid-template-columns:1fr; }
+  }
+  @media (prefers-reduced-motion:reduce) { * { animation:none!important; transition:none!important; } }
+</style>
+
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <div class="brandline">Container Supply Co. · SQF Ed. 9 · FSC 27</div>
+      <h1>SQF Action Item Tracker</h1>
+      <div class="subtitle">Every action item from the program-owner lists, tied to its controlled document. Owners schedule a target date, record completion, and sign off. Items targeted after the milestone require a documented explanation.</div>
+    </div>
+    <div class="milestone-card">
+      <div class="lbl">Certification milestone</div>
+      <div class="date">July 31, 2026</div>
+      <div class="days" id="daysLeft">—</div>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="progress-row">
+    <div class="pct" id="pctText">0%</div>
+    <div class="track" id="track"><span class="seg-done" style="width:0"></span><span class="seg-prog" style="width:0"></span></div>
+    <div class="legend">
+      <span><i style="background:var(--complete)"></i>Complete</span>
+      <span><i style="background:var(--progress)"></i>In progress</span>
+      <span><i style="background:var(--canvas-2)"></i>Remaining</span>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="grow"><input id="search" type="search" placeholder="Search items, documents, owners, notes…" aria-label="Search"></div>
+    <select id="fOwner" class="filter-field" aria-label="Filter by program owner"><option value="">All owners</option></select>
+    <select id="fProgram" class="filter-field" aria-label="Filter by program"><option value="">All programs</option></select>
+    <select id="fStatus" class="filter-field" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <option value="Not Started">Not started</option>
+      <option value="In Progress">In progress</option>
+      <option value="Complete">Complete</option>
+    </select>
+    <button class="btn-ghost" id="exportBtn">Export CSV</button>
+    <button class="btn-primary" id="addBtn">+ Add action item</button>
+  </div>
+
+  <div class="table-shell">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Action item</th>
+            <th>Document / Program</th>
+            <th>Owner</th>
+            <th>Target date</th>
+            <th>Completed</th>
+            <th>Status</th>
+            <th>Milestone</th>
+            <th>Sign-off</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty" style="display:none">
+      <h3>No action items</h3>
+      <p>The list is empty. Reload the source list from the toolbar, or add items manually.</p>
+      <button class="btn-primary" id="emptyAdd">+ Add an item</button>
+    </div>
+  </div>
+
+  <div class="datastrip">
+    <div class="note"><span class="dot" id="saveDot"></span><span id="saveState">Saved · shared with everyone who opens this dashboard</span></div>
+    <div style="display:flex;gap:16px;align-items:center">
+      <span id="countNote"></span>
+      <button class="btn-ghost danger" id="resetBtn" style="padding:5px 11px;font-size:12px">Reload source list</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="modal-head">
+      <h2 id="mTitle">Add action item</h2>
+      <button class="x" id="closeModal" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="fgrid">
+        <div class="fitem full">
+          <label class="field-lbl" for="fiItem">Action item <span class="req">*</span></label>
+          <input id="fiItem" placeholder="What needs to be done">
+          <div class="err" id="errItem">Describe the action item.</div>
+        </div>
+        <div class="fitem">
+          <label class="field-lbl" for="fiDoc">Document ID <span class="req">*</span></label>
+          <input id="fiDoc" list="docList" placeholder="e.g. PRO-025-000">
+          <datalist id="docList"></datalist>
+          <div class="err" id="errDoc">Enter the document ID.</div>
+        </div>
+        <div class="fitem">
+          <label class="field-lbl" for="fiProgram">Program / title <span class="req">*</span></label>
+          <input id="fiProgram" list="progList" placeholder="e.g. Training Program">
+          <datalist id="progList"></datalist>
+          <div class="err" id="errProgram">Enter the program.</div>
+        </div>
+        <div class="fitem">
+          <label class="field-lbl" for="fiOwner">Program owner <span class="req">*</span></label>
+          <input id="fiOwner" list="ownerList" placeholder="Owner name">
+          <datalist id="ownerList"></datalist>
+          <div class="err" id="errOwner">Assign a program owner.</div>
+        </div>
+        <div class="fitem">
+          <label class="field-lbl" for="fiStatus">Status</label>
+          <select id="fiStatus">
+            <option value="Not Started">Not started</option>
+            <option value="In Progress">In progress</option>
+            <option value="Complete">Complete</option>
+          </select>
+        </div>
+        <div class="fitem full">
+          <label class="field-lbl" for="fiDate">Target completion date</label>
+          <input id="fiDate" type="date">
+          <div class="hint">Leave blank if not yet scheduled. A date after July 31, 2026 requires the explanation below.</div>
+        </div>
+        <div class="expl-block" id="explBlock">
+          <div class="banner">⚠ Target is past the July 31, 2026 milestone — explanation required</div>
+          <div class="fitem">
+            <label class="field-lbl" for="fiChallenges">Challenges <span class="req">*</span></label>
+            <textarea id="fiChallenges" placeholder="What is preventing completion by July 31, 2026?"></textarea>
+            <div class="err" id="errChallenges">Describe the challenges preventing on-time completion.</div>
+          </div>
+          <div class="fitem">
+            <label class="field-lbl" for="fiResources">Resources needed for completion <span class="req">*</span></label>
+            <textarea id="fiResources" placeholder="People, budget, equipment, or decisions needed to complete this"></textarea>
+            <div class="err" id="errResources">List the resources needed to complete this item.</div>
+          </div>
+        </div>
+        <div class="signoff-block full">
+          <div class="banner">Completion &amp; program-owner sign-off</div>
+          <div class="fgrid">
+            <div class="fitem">
+              <label class="field-lbl" for="fiCompleted">Date completed</label>
+              <input id="fiCompleted" type="date">
+            </div>
+            <div class="fitem">
+              <label class="field-lbl" for="fiSignedBy">Signed off by (name / initials)</label>
+              <input id="fiSignedBy" placeholder="e.g. C. Dewaik">
+              <div class="hint" id="signHint"></div>
+            </div>
+          </div>
+        </div>
+        <div class="fitem full">
+          <label class="field-lbl" for="fiNotes">Notes</label>
+          <textarea id="fiNotes" placeholder="Context, progress, or references"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="cancelModal">Cancel</button>
+      <button class="btn-primary" id="saveItem">Save item</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORE_KEY = "action-items-v2";
+  var MILESTONE = "2026-07-31";
+  var TODAY = "2026-06-30";
+  var SEED = /*__SEED__*/[{"item":"Create filing system for supplier documents in the folder \"Supplier Approval\" on CSC DIMS","document":"PRO-007-000","program":"Supplier Approval Program","owner":"David Choye","notes":"Suggested fileing system would include a folder with each supplier name containing all relevant documents."},{"item":"Change \"CSC Suppliers List\" title to \"FRM-007-002 Approved Supplier Register\" and create approval document","document":"PRO-007-000","program":"Supplier Approval Program","owner":"David Choye","notes":"Approval Documents for registers consist of the document header and the headers of all columns in the register. \n\nThis cell links to an example approval documnent for \"FRM-004-001 Document Control Register\""},{"item":"Create supplier questionaire \"FRM-007-003 Supplier Questionaire\"","document":"PRO-007-000","program":"Supplier Approval Program","owner":"David Choye","notes":""},{"item":"Section 2.1.4: Change \"Procurement\" to appropriate CSC company role designation.","document":"PRO-007-000","program":"Supplier Approval Program","owner":"David Choye","notes":""},{"item":"Section 2.1.5: Accept or revise suggestion","document":"PRO-007-000","program":"Supplier Approval Program","owner":"David Choye","notes":""},{"item":"Correct any remaining formatting issues","document":"PRO-007-000","program":"Supplier Approval Program","owner":"David Choye","notes":""},{"item":"Include supplier approval for trash pick up and hazerdouse waste handlers as per PRO-042-000. Must be government approved if applicable.","document":"PRO-007-000","program":"Supplier Approval Program","owner":"David Choye","notes":""},{"item":"Maintain waste disposal aggremaents if applicable per PRO-004-000.","document":"PRO-007-000","program":"Supplier Approval Program","owner":"David Choye","notes":""},{"item":"Create Master Preventative Maintenance Schedule \"FRM-030-002 Master Preventative Maintenance Schedule\"","document":"PRO-030-000","program":"Maintenance Program","owner":"Mike Magallanes","notes":""},{"item":"Create Preventative Maintenance Forms \"FRM-030-###\" Follow document numbering system for as many forms as needed any level of separation needed.","document":"PRO-030-000","program":"Maintenance Program","owner":"Mike Magallanes","notes":"Preventative maintenance forms need to be created. Each department should create forms relevant to to the equipment on the PM Schedule within the department."},{"item":"Create Master Equipment Inventory \"FRM-030-001 Master Equipment Register\"","document":"PRO-030-000","program":"Maintenance Program","owner":"Mike Magallanes","notes":"FRM-030-001 Master Equipment Register"},{"item":"2.2.3 Create new equipment approval procedure \"Document number needs to be determined\"","document":"PRO-030-000","program":"Maintenance Program","owner":"Mike Magallanes","notes":"Specific to new equipment. Relevant info needed for record found under section 2.2.4"},{"item":"2.14.3 Maintenance repair clearance forms need to be created and a document number needs to be determined.","document":"PRO-030-000","program":"Maintenance Program","owner":"Mike Magallanes","notes":"Information needed for clearance record\n1. Maintenance/Repair Complete? Yes/No\n2. All tools removed? Yes/No\n3. Area cleaned and sanitized, no rmaining lubricants or chemicals. Yes/No\n4. Verification"},{"item":"A system needs to be developed for maintaining records on 3rd party serviced equipment.","document":"PRO-030-000","program":"Maintenance Program","owner":"Mike Magallanes","notes":""},{"item":"Create maintenance activity log to track temporary repairs and down time (needed for management review below). Determine document id.","document":"PRO-030-000","program":"Maintenance Program","owner":"Mike Magallanes","notes":"Temporary repairs must be listed on maintenance activity log to show weekly inspections (REQUIRED). Temporary repairs should also list an expected complettion date."},{"item":"Section 2.17.2: Calls for daily and weekly management review of downtime. We need to determine how records of these management reviews will be kept. This should include completion reports as per 2.17.4","document":"PRO-030-000","program":"Maintenance Program","owner":"Mike Magallanes","notes":"I don't think Daily is necessary or feasible for us, but weekly can be done by reviewing down time during weekly staff meetings if recorded in the meeting minutes."},{"item":"Ensure all temporary repairs have been removed from production equipment.","document":"PRO-030-000","program":"Maintenance Program","owner":"Mike Magallanes","notes":"Metals is working on removing these items. We'll need to stay on top of progress and look throughout plastics and litho production areas for similar temp repairs."},{"item":"Need to create FRM-029-001 Non-Conforming Equipment Register or combine with FRM-030-002 Master Equipment Register and make Non-Conforming Equipment Filterable.","document":"PRO-029-000","program":"Non-conforming Equipment Management","owner":"Mike Magallanes","notes":"FRM-029-001 Non-Conforming Equipment Register"},{"item":"Need to create \"FRM-029-002 Equipment Quality Hold Tag\" or if combining non-conforming equipment in master equipment it can be called \"FRM-030-002 Equipment Quality Hold Tag\"","document":"PRO-029-000","program":"Non-conforming Equipment Management","owner":"Mike Magallanes","notes":"Associate HOLD TAG to PRO-029"},{"item":"Check nitrogen used in metals for welding. Is it food contact?","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":""},{"item":"2.2.3) All water lines/piping and outlets shall be clearly labeled to identify each service of water, e.g., non-potable, chill water, COW water, cold water, city water, high pressure hot water.","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":""},{"item":"2.2.4 All water tanks used for processing, cleaning, sanitizeing, includeing for hand washing sinks must be regularly inspected and the inspections documented. Documentation must include: 1. sample loacation and size. (100 ml rotating sampleing locations) 2. Testing Frequency (At least anually) 3. Required testing (likely Total coliform, heterotrophic plate count or both) 4. Test Methodology (This will be listed on the lab reports) 5. Acceptance Criteria 6. Corrective Actions 7. Reporting 8. Records (Note: testing procedure outlined in section 2.2.7)","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":"Requiremtns of this testing should be outlined in \"PRO-010-000 Product Sampling, Inspection and Analysis\" Isabel is the program owner and the document needs to be created as of 3-29-2026"},{"item":"2.2.6)1 Annually obtain the water quality reports generated by the municipal water supplier. 2.2.6.3.1 This review shall be documented with the reviewer’s signature and date of review.","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":""},{"item":"2.3.8) (Boilers for steam used in production if applicable) Boiler Blow Downs are to be performed on a routine basis and documented.","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":"This should go on the cleaning and sanitation schedule."},{"item":"2.2.10.3) All backflow devices are to be inspected for proper functionality at least annually.","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":""},{"item":"2.2.9.3) Create a list or register of all places where water is used in the facility and asign document ID and title (FRM-037-###...)","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":""},{"item":"2.2.9.5) If the “boil order” results in a product hold, the Quality Manager shall complete an investigation that documents the incident and all corrective actions taken.","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":"This can be recorded on the nonconorming product hold. No additional document needs to be created."},{"item":"2.4.1 / 2.4.3) Compressed air filter must filter 5 microns or larger","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":""},{"item":"2.4.7) Air traps and filters shall be inspected and changed routinely.","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":"These can be added to the maintenance schedule."},{"item":"2.4.8) Air quality is to be analyzed and monitored on a regular basis.","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":"Air should be tested at least annually, most commonly for particles, moisture (water), oil (aerosol/vapor), and microbiological organisms."},{"item":"2.4.9) If applicable, oil used for compressors is to be product/food grade in case of incidental contact with product or product contact surfaces.","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":"Pnuematic Lubricant is food Grade, NSF H1 approved for incidental contact with food contact surfaces."},{"item":"2.6) A periodic audit shall be conducted by the SQF Practitioner, which includes verifying compliance with all utility regulations requiring product Safety Team notification of any utility issues.","document":"PRO-037-000","program":"Utilities Management","owner":"Mike Magallanes","notes":"Work with Christopher to create record for this. Requirements will need to be outlined in PRO-018-000 Internal Audits and Self Inspections"},{"item":"2.1.2.3 When commissioning new equipment, a meeting must be held to discuss \"Sanitary and Safe Design\". This should include planning over the new equipments life span, maintenance, cleaning and sanitation, and ultimaety end of life disposition. All stakeholders should attend and attendance and meeting notes must be recorded.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":"2.1.4 Key objectives of the business are created to ensure that all new equipment projects go through technical risk assessments which are critical to ensure product quality and food safety requirements for the business. 2.1.6 contains information to be collected. 2.1.7 Approvals 2.1.8 Design and review considerations, 2.1.9 Installation"},{"item":"2.2.1.4 Utilize a color coding system to ensure segreagation of food contact and non food contact utensils. Update this section and PRO-033-000 Cleaning and Sanitation section 2.1.10 color coding is not used to maintain segregation. (revise section 2.2.5.3 if a color coding system is not used.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":""},{"item":"2.2.1.6 Ensure designated racks or hangers for tools used within departments are present and clearly labneled as eithe \"Product Contact\" or \"Non-Product Contact\"","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":""},{"item":"2.2.2.3 Equipment cleaning brushes shall be inspected monthly to ensure that there are no loose bristles. This inspection is documented.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":"2.2.5.5 Outlines Brush inspections"},{"item":"2.2.3.1.1 Supervisors will count the number of bladed tools handed out and record. 2.2.3.2.1 Supervisors will collect all tools after use or at the end of the shift and will count to make sure that the amount turned in matches the amount handed out.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":"This can all go on the same record sheet."},{"item":"2.2.3.3.1 If the number of tools turned in does not match the amount handed out or tools are returned in poor condition, it will be determined what happened to the tool (broken, thrown in trash, etc.). Corrective actions should follow the guidlines in PRO-017-000 Corrective and Preventive Action Program","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":""},{"item":"2.2.4.5.3 Corrective actions/reason for the tool missing and explanation for what was done with the product will be documented.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":"Corrective actions should follow the guidlines in PRO-017-000 Corrective and Preventive Action Program"},{"item":"2.3.1 Outlines what protective clothing and uniforms does Containier Supply provide. This should only include pants and shirts. Employees are required to purchase their own non slip shoes. A steel or aluminum toe is recomended. After six months of employment employees are entitled to a $150 reimbursment, $200 for steel toe.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":"2026 Shoe Allowance"},{"item":"2.3.2 Such protective clothing shall be hung on a hook or other suitable device outside the toilet and processing/manufacturing areas.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":"No plan yet for this. This requirement is shared with Isabel's PRO-009-000 Good Manufacturing Practices"},{"item":"2.3.5 Appropriate changing procedures shall be implemented and conducted in a suitable designated room.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":"No plan yet for this. This requirement is shared with Isabel's PRO-009-000 Good Manufacturing Practices"},{"item":"2.3.6 - 2.3.10 Is specific to uniforms. Ensure these sections are accurate.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":""},{"item":"2.3.16.2 The effectiveness of the laundry cleaning program shall be monitored biannually through the microbiological testing of clean uniforms and for the presence of nut allergens.","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":""},{"item":"Complete a risk assesment for clothing and hair covers. (form id: FRM-028-001 Clothing and Hair Covering Risk Assessment)","document":"PRO-028-000","program":"Equipment, Utensils and Protective Clothing","owner":"Mike Magallanes","notes":"This is where we will record justifications for things like not requiresing all tools to be counted and recorded by supervisors."},{"item":"2.2.1 List mapping requirments. Some are best practice and not required. We should mapp all we can. Access points for personnel Access points for raw material (including packaging), WIP, and open products Routes of movement for personnel Routes of movement for raw materials including packaging Routes for the removal of waste Routes for the movement of rework Location of all staff facilities including changing rooms, toilets, canteen, breakroom, smoking areas, etc. Production process flow Enclosed product areas Non-product area Drains Water Distribution System","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":"If there are any that can't be mapped, speak with Christopher, it may not be required."},{"item":"2.2.4 Calls for deperation of dissimilar operations. At a minimum bathrooms/locker cannot open into production areas.","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":"This action item comes from Isabel's Good Manufacturing Practices. Work with Izzy and Christopher on ways to satisfy both program requirements."},{"item":"2.2.9 Maps of all drains, water routes, and other utilities are required to be maintained and accurate to the current layout of the facility.","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":"This is one that is required under section 2.2.1"},{"item":"2.3.1 Buildings shall be weather proof","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":"This means no leaks when it rains."},{"item":"2.3.3 All openings through walls even if still in use for piping or wireing must be sealed to prevent pest entry.","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":""},{"item":"2.3.6 and 2.3.14.3 Void spaces above, below or adjoining ceilings/floors/walls shall be accessible for inspection and pest treatment.","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":"This covers the areas above drop ceilings. I am hoping we can avoid this requirement because it only exists above the offices."},{"item":"2.3.16.7 Gaps around dock levelling platforms shall be adequately proofed to prevent pest entry.","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":"Only dock levelers are in Monarch, Christopher is addressing this with Frnando and Steven as a PRO-038-000 action item."},{"item":"2.3.16.10 All doors are to be equipped with seals to ensure that when closed, there are no gaps that will allow pest entry.","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":"This is in progress and is a shared action item with Isabels PRO-009-000 Good Manufactureing Practices"},{"item":"2.3.17.4 Air filters shall be changed at an appropriate frequency to ensure their efficacy and so that they do not become a source of contamination. Special requirements apply to positively pressurized and filtered aseptic rooms.","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":"This would include all air filters not serviced by a 3rd party."},{"item":"2.3.21.2 Electrical control panels shall be either fitted to walls or mounted away from the wall to allow access for inspection and cleaning.","document":"PRO-027-000","program":"Construction of Premises and Equipment","owner":"Mike Magallanes","notes":"I think this is the case, just need to confirm."},{"item":"2.1.10 A system to maintain seperation of utensilds must be identified or developed.","document":"PRO-033-000","program":"Cleaning and Sanitation","owner":"Jose Alcala","notes":""},{"item":"Develop FRM-033-001 Master Cleaning and Sanitation Schedule for all equipment and areas. The schedule should include each item to be cleaned, the task, frequency, responsible person/s, method, equipment, and verification.","document":"PRO-033-000","program":"Cleaning and Sanitation","owner":"Jose Alcala","notes":"This could be split up into operational areas by department, storage, traffic areas, offices, structures, etc. Need to include breakrooms."},{"item":"2.1.11 a method for verification of production equipment cleaning must be developed.","document":"PRO-033-000","program":"Cleaning and Sanitation","owner":"Jose Alcala","notes":"This can be done by visual assesment. Utilizing a white cloth or glove is a common method of ensureing all dust or soils have been removed from surfaces."},{"item":"2.5 Identify all COP tanks or part washers and compile a list of names and locations.","document":"PRO-033-000","program":"Cleaning and Sanitation","owner":"Jose Alcala","notes":"Examples of this are the parts washer in machine shop and in the mechanics cage. We need to know evry case of this on site."},{"item":"Ensure all COP stations have a chemical label with safe handleing instructions at each station and address each point in 2.5 as needed or not needed.","document":"PRO-033-000","program":"Cleaning and Sanitation","owner":"Jose Alcala","notes":""},{"item":"2.6 any CIP system need to be identified and each point in 2.6 needs to be addressed as needed or not needed.","document":"PRO-033-000","program":"Cleaning and Sanitation","owner":"Jose Alcala","notes":""},{"item":"Determine specifics of Adjacent line clearance requirements and update the text under section 2.7","document":"PRO-033-000","program":"Cleaning and Sanitation","owner":"Jose Alcala","notes":""},{"item":"Preoperational inspections will need to be developed by all departments coordinated by this pprogram owner. This will include creation of the relative SOP and required forms","document":"PRO-033-000","program":"Cleaning and Sanitation","owner":"Jose Alcala","notes":""},{"item":"Post sanitation inspections will need to be developed by all departments coordinated by this pprogram owner. This will include creation of the relative SOP and required forms","document":"PRO-033-000","program":"Cleaning and Sanitation","owner":"Jose Alcala","notes":""},{"item":"Create Preoperational inspection forms for all production and support equipment and assign document id FRM-033-###. Forms should include at least the following; Production Area - Inmcludes floors, walls , ceilings, etc. surrounding production equipment Equipment - Cleaned and sanitized, free of debris, residues, and cleaning agents. In good condition with no damages or temporary repairs Foreign Material Control - No personal items or unused equipment, only materials need for current production are present. Sanitation Status - Has the equipment been effectively sanitized? Pest Control - No sign of pests, all pest control devices in vecinity are in place Chemical Control - All chemicals including cleaning agents, lubricants, or any chemical not used in production are removed to proper storage Spec and Traceability - Appropriate raw materials are in place for product being produced, lot number for days production is correct Corrective action - any corrections required to be made before production can begin Sign off - All checks passed or corrective actions completed and authorized person sign off to begin prodcution.","document":"SOP-033-001","program":"Pre-Operational Inspection","owner":"Jose Alcala","notes":""},{"item":"Determine who will be authorized to complete daily pre op inspections","document":"SOP-033-001","program":"Pre-Operational Inspection","owner":"Jose Alcala","notes":""},{"item":"Ensure wet floor signs are available in each department to mark spills that occur.","document":"PRO-034-000","program":"Hygienic Remediation Program","owner":"Jose Alcala","notes":""},{"item":"2.2.3.2 requires shutting down production if the roof above areas with exposed product is leaking.","document":"PRO-034-000","program":"Hygienic Remediation Program","owner":"Jose Alcala","notes":"Example would be above the conveyance to line 6 paletizer. These areas should be addressed urgently so both production and SQF certification can continue."},{"item":"Plastic sheets used to direct water away from product must be dated upon installation and replaced with a new one within 24 hours until the leak is repaired","document":"PRO-034-000","program":"Hygienic Remediation Program","owner":"Jose Alcala","notes":"An example of this would be above the conveyor on palletizer 6"},{"item":"2.1.1 Ensure chemicals stored thoughout the entire property need to be stored seperately from product and raw materials. All chemicals storage needs to have restricted and limited access (under lock and key only leads or managers have keys).","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":""},{"item":"2.1.2 Ensure there are no fixtures, ducts, pipes, or other overhead devices shall not be suspended over exposed product storage or working areas where dirt or condensate may contaminate products, raw material, or product-contact surface equipment.","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":"Work with MIke to get these items if found on \"Facility Maintenance Tracker\" if any are found."},{"item":"2.1.5 Ensure that all hollow-type bumper devices shall be filled with dense, solid material or shall be sealed at all open ends.","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":"Work with MIke to get these items on \"Facility Maintenance Tracker\" if any are found."},{"item":"2.1.8 Ensure all ailes between equipment and stored product have sufficcient seperation to perform cleaning or house keeping duties as well as inspections. 18\" of seperation between walls and storage must be maintained even where racks come within 18 inches of walls. Aisles for traffic must be 36\" wide.","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":""},{"item":"2.1.10 Ensure roofs are free of excessive water accumulations. Roof drainage systems shall be kept in good repair and free of obstructions. Roofs shall be water tight and not leaking.","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":"Work with MIke to get all roof leaks on \"Facility Maintenance Tracker\""},{"item":"2.1.12 Ensure all dock levelers at Monarch are routinely cleaned and list any openings to the exterior larger than 1/4\". If you can see light from the outside could be a pest entrance.","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":"Mike and Christopher are addressing door gaps >1/4\"."},{"item":"2.2 Any materials allowed to be stored outside will require creation and maintenance of additional records and added inspection and cleaning. Without a system in place to ensure at least monitoring with records kept, any material left outside will be destined for disposal following the guidelines in PRO-012-000 Non-Conforming Product Management.","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":""},{"item":"2.3.4 - 2.3.6 A system must be in place to maintain accurate records by date linked to lot or other traceability identifier to meet requirements outlined in MAN-004 Product Identification, Traceability and Recall.","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":"Isabel owns MAN-004 when she gets to this she will need assistance in developeing this sytem on the receiving side and bolstering our system on the shipping side."},{"item":"2.4.4 - 2.4.5 Ensure all material received is clearly and visibly labeled or tagged and inludes product Identification code, description and date received.","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":""},{"item":"2.7.1 - 2.7.2 Determine the length of time at wich products will be considered distressed and maintain a list (FRM-038-001 Distressed Inventory Register) of all raw material, WIP and Finished Goods Inventory to determine the timely and economical means of disposition of specific lots by the various responsible parties. The FRM-038-001 Distressed Inventory Register must be reviewed monthly and and a plan, to dispose distressed product, including how and by when, must be developed. Records of the review, disposition plan and expected date, and disposal must be kept.","document":"PRO-038-000","program":"Warehouse Management","owner":"Blake Adolphson","notes":""},{"item":"2.1.2 Regular maintenance and sanitation of company fleet are required to be conducted and recorded. Record forms will need to be created and a document number determined.","document":"PRO-040-000","program":"Loading, Transport and Unloading Practices","owner":"Blake Adolphson","notes":"How frequently the maintenance and sanitation is done must be based on risk. Maintenance requirements should follow manufacturers recommendations at a minimum."},{"item":"Create a specification register to maintain specifications for Packaging Specifications, Finished Product Specifications, Process Specifications, and Raw Material Specifications including the following information where applicable. 1. Product or material name and unique identifier 2. Description and intended use 3. Food safety and quality parameters (e.g., microbiological, chemical, physical limits) 4. Regulatory and allergen requirements 5. Packaging and labeling requirements 6. Storage, handling, and shelf-life requirements 7. Acceptance criteria and testing methods 8. Revision number and effective date 9. Approval signatures or electronic approval","document":"PRO-006-000","program":"Specifications Management","owner":"Isabel Zuniga","notes":"4/9/2026  Progress Note:\n• Finished product specs are complete for the plastics department\n• Finished product specs for metals is currently in progress (ends specs are complete need to add can body specs to the register)"},{"item":"Ensure all obsolete specifications shall be removed from points of use and replaced with current versions","document":"PRO-006-000","program":"Specifications Management","owner":"Isabel Zuniga","notes":""},{"item":"Create a system to ensure all specifications are reviewed at least annually, or when regulatory requirements change, supplier formulation changes occur, customer requirements change, or a food safety or quality issue is identified and records of reviews are maintained.","document":"PRO-006-000","program":"Specifications Management","owner":"Isabel Zuniga","notes":"4/9/2026 Progress Note:\n• Created a \"Spec and Process Review\" dashboard ready now, will develop a process for the annual review of the dashboard\n• Need to create the same report to review all specs"},{"item":"Ensure deviations from approved specifications are documented and result in a root cause analysis, corrective action, and if needed specification changes where needed.","document":"PRO-006-000","program":"Specifications Management","owner":"Isabel Zuniga","notes":"Add \"Deviation\" as a reason for the CAPA. Revise the form"},{"item":"Training requirement in 2.6.1 will at the least be the sampleing and testing requirment outlined in PRO-025-000 Training Program.","document":"PRO-006-000","program":"Specifications Management","owner":"Isabel Zuniga","notes":"The records kept for all action items listed here should include.\n1. Approved specifications\n2. Specification revision history\n3. Review and approval records\n4. Training records\n5. Nonconformance and corrective action records"},{"item":"2.1.2 Doctors note required for 3 days or more absenses","document":"PRO-009-000","program":"Good Manufacturing Practices","owner":"Isabel Zuniga","notes":""},{"item":"2.2.5 Requires uniforms are not brought into bathrooms, and are hung in designated areas outside restrooms.","document":"PRO-009-000","program":"Good Manufacturing Practices","owner":"Isabel Zuniga","notes":""},{"item":"2.1.3.1 and 2.1.3.2 require regular maintentance of grounds including weeds and vegitation and litter and trash pick up so as to avoid the potential of contamination or pest inclusion.","document":"PRO-009-000","program":"Good Manufacturing Practices","owner":"Isabel Zuniga","notes":"These requiremtns should be on the cleaning schedule conducted at regular intervals eithrt by internal personnelor a 3rd party."},{"item":"2.3.3.6 Compile a list of any any openings in walls, doors, windows, screens, etc. that are 1/4 \" or larger and may provide acces to pests. This includes intentional openings for ventilation that must be screened. (Generally if light can be seen through an opening, pest entry is possible.","document":"PRO-009-000","program":"Good Manufacturing Practices","owner":"Isabel Zuniga","notes":"This work is well under way. Mike and Christopher are working on the doors throughout the property. Holes through walls, and vents with larger that a 20X20 mesh still need to be identified and listed."},{"item":"Assist with PRO-038-000 Warehouse Management to ensure chemicals stored thoughout the entire property need to be stored seperately from product and raw materials. All chemicals storage needs to have restricted and limited access (under lock and key only leads or managers have keys).","document":"PRO-009-000","program":"Good Manufacturing Practices","owner":"Isabel Zuniga","notes":"This is a key action item under PRO-038-000 Warehouse Management in regards to GMPs"},{"item":"2.3.4 (d4) Requires measures to be taken to ensure any possibly contaminated air (ea. bathrooms) does not pose a contamination risk to processing areas.","document":"PRO-009-000","program":"Good Manufacturing Practices","owner":"Isabel Zuniga","notes":"This is generally accomplished either by hand washing romms used to contain and seperate bathrooms from production areas or by ensuring positive preassure in production areas or negative preassure in bathrooms."},{"item":"2.3.4 (e3) Calls for hands free operation of hand washing faucets.","document":"PRO-009-000","program":"Good Manufacturing Practices","owner":"Isabel Zuniga","notes":"The best method is foot pedal opperated sink, but this can also be accomplished with automated faucets attachments to automate current faucets or replaceing with automated faucets."},{"item":"Ensure SDS for all chemicals used is available in the lab.","document":"PRO-011-000","program":"Good Laboratory Practices","owner":"Isabel Zuniga","notes":"SDS can be found in \"Hazmat Right to Know\" on \"CSC DIMS\" and can be stored in digital or hard copies."},{"item":"Obtain a flammable or chemical storage cabinet for storage of lab chemicals.","document":"PRO-011-000","program":"Good Laboratory Practices","owner":"Isabel Zuniga","notes":"The SDS or primary label should list if a chemical is combustable, flamable, corrosive, etc, and will determine what storage is needed."},{"item":"Ensure current version of any relvent documents (ea. policy, instruction, spec, SOPs) are available and referencable.","document":"PRO-011-000","program":"Good Laboratory Practices","owner":"Isabel Zuniga","notes":""},{"item":"Develop training for personnel handeling Non Conforming Products","document":"PRO-012-000","program":"Non-Conforming Product Management","owner":"Isabel Zuniga","notes":"This is going to be one of the \"task specific training\" required under the training program.  Work with Christopher to develop training and incorperate into the training matrix\n\n6/12/2026: Training was completed 5/7/2026 I just needed to upload the record in the drive which is now completed. The training material used was the actual spreadsheet and hold tag. Plan to have a follow up training as a refresher end of the month using SOP-012-004\n\n6/18/2026: Program documents completed, program implemented"},{"item":"Create \"FRM-013-001- Product Aging Inventory/ Material Management Review\" for expireing or ageing product review and disposition.","document":"PRO-013-000","program":"Product Release","owner":"Isabel Zuniga","notes":"A register like the non conforming product register or the non conforming product register itself may be best in htis case. Isabel owns the non conforming product register. This should be an ongoing form listing of expired, expireing, and otherwise not shippable product with each entry concluding in disposition.\n\n6/18/2026: Program was revised to remove the requirement of the \"aging\" report, the program now uses the inventory count date and report which is already available and in practice"},{"item":"Create a batch review checklist including any documents and records that must be reviewed for product that will be released.","document":"PRO-013-000","program":"Product Release","owner":"Isabel Zuniga","notes":"Document ID FRM-013-002 should be used for this checklist. Items to include may be receiving documentation, testing and analysis documentation, any related hold documentation, etc.)"},{"item":"3.1.1) Create a prerequisite program table that includes a list of all prerequisite programs, with at least annual review dates and criteria (method and responsibilities for verification of the program and identify the responsibility, frequency, record, monitoring method and corrective action plan if nonconformances are found) to review effectiveness of all prerequisite programs.","document":"PRO-015-000","program":"Management System Validation","owner":"Isabel Zuniga","notes":"Prerequisite Programs:\nSite and Equipment\nMaintenance & Calibration\nCleaning and Sanitation\nPest Prevention\nPersonnel Hygiene & Training\nWater and Air Quality\nSupplier Management\nStorage and Transport\nProduct Identification and Traceability\nForeign Matter Contamination"},{"item":"3.2.1) Validation of HACCP plan at least annually or when process changes","document":"PRO-015-000","program":"Management System Validation","owner":"Isabel Zuniga","notes":""},{"item":"3.2.4) Prepare a Food Safety and Quality Plan Validation and Verification schedule based on each HACCP and Quality Plan and according to the Food Safety and Quality Plan MAN-002 AND MAN-003.","document":"PRO-015-000","program":"Management System Validation","owner":"Isabel Zuniga","notes":""},{"item":"Complete form FRM-002-001 Mangement Review Form","document":"FRM-002-001","program":"Management ReviewForm","owner":"Isabel Zuniga","notes":"6/19/2026: Completed, Form is approved and the review has been completed, record is on file"},{"item":"Complete form FRM-002-002 Food Safety Resource Analysis Form","document":"FRM-002-002","program":"Food Safety Resource Analaysis Form","owner":"Isabel Zuniga","notes":"6/19/2026: Completed, Form is approved and the record is on file"},{"item":"Complete form FRM-001-00 Food Safety Culture Checklist","document":"FRM-001-000","program":"Food Safety Culture Checklist","owner":"Isabel Zuniga","notes":"6/19/2026: Completed, Form is approved and the record is on file"},{"item":"Complete Customer Complaint Log","document":"FRM-003-002","program":"Customer Complaint Log","owner":"Isabel Zuniga","notes":"6/19/2026: Completed, Log was approved but the records needed to be updated. Completed review and update of the log. Program complete and implemented"},{"item":"Create or obtain HACCP training materials","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":"HACCP for staff involved in developing and maintaining food safety plans"},{"item":"Create or obtain Personal hygiene training materials","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":"Everyone"},{"item":"Create or obtain GMP training materials","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":"Anyone who handles product or conducts daily tasks in GMP zones"},{"item":"Create a list of work tasks that may have an impact on food safety to determine training needs for this requirement","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":"Work Tasks:\nNon-conforming Product Management Training - SOP-012-004 Workflow"},{"item":"Create training for Sampling and test methods for all staff involved in sampling and testing of raw materials, packaging, work-in-progress, and finished products that may impact food safety.","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":"Discuss this with Isabel. This may not be needed or it would be largely Quality staff and plastics staff who draw resin samples."},{"item":"Create or obtain Allergen management for all relevant staff training materials","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":"We have no operational allergens only staff that handles product need training on allergens relevant to breaks, personal items, vening machines, etc. This can be combined with GMP or Personal Hygiene"},{"item":"Create or obtain food defense for all relevant staff training materials","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":"Everyone"},{"item":"Create or obtain food fraud for all relevant staff training materials","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":"Everyone"},{"item":"Create new hire training: All newly hired personnel must receive basic food safety hygiene training prior to or within the first few days of commencing their new job.","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Ensure even temporary staff receive basic training if handeling product.","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Create or obtain Forklift training materials","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Create or obtain Forklift training materials → Forklift Training Materials","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Create or obtain Forklift training materials → Forklift Operator Evaluation","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Create or obtain Forklift training materials → Forklift Pre-Operational Inspection Checklist","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate SPCC training into training program","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate Safety Training Into training program","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate Safety Training Into training program → Fire Safety","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate Safety Training Into training program → Blood born pathogens","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate Safety Training Into training program → Lock out tag out","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate Safety Training Into training program → Chemical handeling/Allergen Control","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate Safety Training Into training program → Hazmat Labeling","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate Safety Training Into training program → Right to know","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate Safety Training Into training program → Stormwater pollution prevention","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Integrate Safety Training Into training program → Accidental release measures and spill prevention control countermeasures","document":"PRO-025-000","program":"Training Program","owner":"Christopher Dewaik","notes":""},{"item":"Create a Pest Control Activity Log and assign document id FRM-032-001 for logging pest sightings not listed on Orkin service reports.","document":"PRO-032-000","program":"Pest Control Program","owner":"Christopher Dewaik","notes":""},{"item":"Ensure the Pest Control Activity Log mentioned above is reviewed by Orkin Tech at each service.","document":"PRO-032-000","program":"Pest Control Program","owner":"Christopher Dewaik","notes":""},{"item":"Ensure maps showing locations of temporary traps are utlized whenever temporary traps are used.","document":"PRO-032-000","program":"Pest Control Program","owner":"Christopher Dewaik","notes":""},{"item":"Ensure Orkin Serice reports are reviewed and signed by SQF Practitioner","document":"PRO-032-000","program":"Pest Control Program","owner":"Christopher Dewaik","notes":""},{"item":"2.10.2.1 ILTs must never be closer than ten feet (10') to exposed product.","document":"PRO-032-000","program":"Pest Control Program","owner":"Christopher Dewaik","notes":"ILTs must never be closer than ten feet (10') to exposed product."},{"item":"Ensure no standing water can collect on roofs or near building entrances to avoid bird ingress and check around garbage, compactors, and shipping and receiving to ensure there are no pest harborages.","document":"PRO-032-000","program":"Pest Control Program","owner":"Christopher Dewaik","notes":""},{"item":"Ensure an annual review of the pest control program takes place, is recorded, and follows the requirements of PRO-018-000 Internal Audits and Self Inspections","document":"PRO-032-000","program":"Pest Control Program","owner":"Christopher Dewaik","notes":"Add this to PRO-018-000 Internal Audits and Self Inspections."},{"item":"Create Blood Exposer Event Report assign document id FRM-035-001. The report should include a description of the event, a description of the actions taken in response, and the date and time if necessary that the area was brought back into compliance and approved to restart operations.","document":"PRO-035-000","program":"Exposure to Blood or Bodily Fluids","owner":"Christopher Dewaik","notes":""},{"item":"Obtain a blood borne pathogen kit for each department.","document":"PRO-035-000","program":"Exposure to Blood or Bodily Fluids","owner":"Christopher Dewaik","notes":""},{"item":"Create \"FRM-039-001 Approved Chemical Register\"  (Drafted not Aapprove)","document":"PRO-039-000","program":"Chemical and Hazardous Material Management","owner":"Christopher Dewaik","notes":""},{"item":"Create \"FRM-039-002 Chemical Spill Report\" (Revise file on editable drive)","document":"PRO-039-000","program":"Chemical and Hazardous Material Management","owner":"Christopher Dewaik","notes":""},{"item":"2.9.1 assist Blake with \"Ensure chemicals stored thoughout the entire property need to be stored seperately from product and raw materials. All chemicals storage needs to have restricted and limited access (under lock and key only leads or managers have keys).\"","document":"PRO-039-000","program":"Chemical and Hazardous Material Management","owner":"Christopher Dewaik","notes":""},{"item":"Ensure all grease guns are marked food grade or non food grade and that all gas cilynders are properlry stored.","document":"PRO-039-000","program":"Chemical and Hazardous Material Management","owner":"Christopher Dewaik","notes":""},{"item":"Ensure all SDS are accesible at least at the mechanics cage.","document":"PRO-039-000","program":"Chemical and Hazardous Material Management","owner":"Christopher Dewaik","notes":""},{"item":"Ensure everyone knows a chemical spill must be reported on FRM-039-002 Chemical Spill Report","document":"PRO-039-000","program":"Chemical and Hazardous Material Management","owner":"Christopher Dewaik","notes":""},{"item":"2.1.3) Ensure foreign matter (Physical contamination) risks are outlined in HACCP plan","document":"PRO-041-000","program":"Control of Foreign Matter Contamination","owner":"Christopher Dewaik","notes":""},{"item":"2.1.3) Ensure foreign matter (Physical contamination) risks are outlined in supplier approval risk assesment.","document":"PRO-041-000","program":"Control of Foreign Matter Contamination","owner":"Christopher Dewaik","notes":""},{"item":"2.3.13.1) Create FRM-041-001 Glass & Brittle Materials Register","document":"PRO-041-000","program":"Control of Foreign Matter Contamination","owner":"Christopher Dewaik","notes":"Should include all breakable materials that CAN end up in production (ea. bathroom mirrors)"},{"item":"2.3.13.2) Facilities shall perform an annual internal glass audit. This audit can be segregated into smaller audits of known locations and take corrective and preventative actions to ensure glass and brittle does not contaminate products as long as the whole system is audited on an annual basis. The results shall be documented.","document":"PRO-041-000","program":"Control of Foreign Matter Contamination","owner":"Christopher Dewaik","notes":""},{"item":"2.4.5.1) Magnetic separation equipment design — estimated capture efficiency and installation location","document":"PRO-041-000","program":"Control of Foreign Matter Contamination","owner":"Christopher Dewaik","notes":""},{"item":"2.4.5.3) Magnetic Separation System operation and maintenance manuals","document":"PRO-041-000","program":"Control of Foreign Matter Contamination","owner":"Christopher Dewaik","notes":""},{"item":"2.4.5.4) Records documenting magnet checks and retained metal","document":"PRO-041-000","program":"Control of Foreign Matter Contamination","owner":"Christopher Dewaik","notes":""},{"item":"2.4.7.1) Verification/calibration records for all magnets (annual or per designated frequency)","document":"PRO-041-000","program":"Control of Foreign Matter Contamination","owner":"Christopher Dewaik","notes":""},{"item":"Determine if \"FRM-041-002 Sharps Management Form\" is needed and create it or remove the document from PRo-041-000 section 3.3","document":"PRO-041-000","program":"Control of Foreign Matter Contamination","owner":"Christopher Dewaik","notes":""},{"item":"Include requirements of annual audit for utilities to verify compliance with all regulations for PRO-037-000 Utilities Management","document":"PRO-018-000 (Under Development)","program":"Internal Audits and Self Inspections","owner":"Christopher Dewaik","notes":""},{"item":"Include requirements of annual audit for waste management process to verify compliance with PRO-042-000 Waste Management","document":"PRO-018-000 (Under Development)","program":"Internal Audits and Self Inspections","owner":"Christopher Dewaik","notes":""},{"item":"Ensure hairnet usage is checked during plastics self audits","document":"PRO-018-000 (Under Development)","program":"Internal Audits and Self Inspections","owner":"Christopher Dewaik","notes":""},{"item":"2.5.1) Ensure all waste recepticles are black, including those those used for catching roof leaks.","document":"PRO-042-000","program":"Waste Management","owner":"Arnel Nagel","notes":""},{"item":"2.5.2) All waste containers are to be black or clearly marked for the waste to be placed into that container such as trash/refuse and recycling waste.","document":"PRO-042-000","program":"Waste Management","owner":"Arnel Nagel","notes":""},{"item":"2.1) Complete FRM-008-001 Applicable Regulations and Legislation, finalize approval, and use form to maintain an index of all applicable regulation and legislation including: 1. Maximum residue limits 2. Food Safety 3. Packaging 4. Product description 5. Nutritional, allergen and additive labeling 6. Industry codes of practice 2.2) Ensure FRM-008-001 lists methodology used to stay up to date like Regular review of legislation, Subscription services, or Participation in industry groups or activities.","document":"PRO-008-000","program":"Food Legislation","owner":"Joe Rider","notes":""}];
+  var items = [];
+  var editingId = null;
+  var filters = { search:"", owner:"", program:"", status:"", statChip:"" };
+  var $ = function (id) { return document.getElementById(id); };
+
+  function newId() { return "ai_" + Date.now() + "_" + Math.random().toString(36).slice(2,7); }
+  function nowDate() { try { return new Date().toISOString().slice(0,10); } catch(e){ return TODAY; } }
+
+  function seedRecords() {
+    return SEED.map(function (s) {
+      return {
+        id: newId(), item: s.item, document: s.document, program: s.program, owner: s.owner,
+        notes: s.notes || "", status: "Not Started", date: "",
+        challenges: "", resources: "", dateCompleted: "", signedOffBy: "", signOffDate: "",
+        updated: new Date().toISOString()
+      };
+    });
+  }
+
+  // Storage adapter: use Claude shared storage when available (this preview),
+  // otherwise fall back to the browser's localStorage so the file works when
+  // downloaded and opened locally. Last resort: in-memory only (not persisted).
+  var STORAGE_MODE = (typeof window.storage !== "undefined" && window.storage && typeof window.storage.get === "function")
+    ? "claude"
+    : (function () { try { window.localStorage.setItem("_t","1"); window.localStorage.removeItem("_t"); return "local"; } catch (e) { return "memory"; } })();
+
+  async function storeGet() {
+    if (STORAGE_MODE === "claude") { var r = await window.storage.get(STORE_KEY, true); return (r && r.value) ? r.value : null; }
+    if (STORAGE_MODE === "local") { return window.localStorage.getItem(STORE_KEY); }
+    return null;
+  }
+  async function storeSet(str) {
+    if (STORAGE_MODE === "claude") { await window.storage.set(STORE_KEY, str, true); return; }
+    if (STORAGE_MODE === "local") { window.localStorage.setItem(STORE_KEY, str); return; }
+    /* memory mode: nothing persisted */
+  }
+
+  async function load() {
+    try {
+      var raw = await storeGet();
+      items = raw ? JSON.parse(raw) : null;
+    } catch (e) { items = null; }
+    if (!items || !items.length) { items = seedRecords(); await save(true); }
+    render();
+  }
+  async function save(silent) {
+    if (!silent) setSave("saving");
+    try { await storeSet(JSON.stringify(items)); setSave("saved"); }
+    catch (e) { setSave("error"); }
+    if (!silent) render();
+  }
+  function setSave(state) {
+    var dot = $("saveDot"), txt = $("saveState");
+    if (state === "saving") { dot.style.background = "var(--progress)"; txt.textContent = "Saving…"; }
+    else if (state === "error") { dot.style.background = "var(--overdue)"; txt.textContent = "Couldn't save — check connection and retry"; }
+    else {
+      dot.style.background = STORAGE_MODE === "memory" ? "var(--overdue)" : "var(--complete)";
+      txt.textContent = STORAGE_MODE === "claude" ? "Saved · shared with everyone who opens this dashboard"
+        : STORAGE_MODE === "local" ? "Saved on this computer (this browser only)"
+        : "Not saved · this browser is blocking storage — export CSV before closing";
+    }
+  }
+
+  function milestoneState(it) {
+    if (it.status === "Complete") return { key:"ok", label:"Complete" };
+    if (!it.date) return { key:"needs", label:"Needs scheduling" };
+    if (it.date < TODAY) return { key:"overdue", label:"Overdue" };
+    if (it.date <= MILESTONE) return { key:"sched", label:"On schedule" };
+    var explained = (it.challenges||"").trim() && (it.resources||"").trim();
+    return explained ? { key:"risk-ok", label:"Past milestone · explained" }
+                     : { key:"risk", label:"Past milestone · needs explanation" };
+  }
+
+  function render() { renderDays(); renderStats(); renderProgress(); renderFilters(); renderRows(); }
+
+  function renderDays() {
+    var days = Math.round((new Date(MILESTONE) - new Date(TODAY)) / 86400000);
+    $("daysLeft").textContent = days + " days remaining (as of Jun 30, 2026)";
+  }
+  function counts() {
+    var c = { total:items.length, done:0, prog:0, todo:0, risk:0 };
+    items.forEach(function (it) {
+      if (it.status==="Complete") c.done++; else if (it.status==="In Progress") c.prog++; else c.todo++;
+      var m = milestoneState(it);
+      if (m.key==="risk"||m.key==="risk-ok"||m.key==="overdue") c.risk++;
+    });
+    return c;
+  }
+  function renderStats() {
+    var c = counts(); var pct = function (n){ return c.total ? n/c.total*100 : 0; };
+    var defs = [
+      { cls:"s-total", key:"",           num:c.total, cap:"Total items", bar:100 },
+      { cls:"s-done",  key:"Complete",   num:c.done,  cap:"Complete", bar:pct(c.done) },
+      { cls:"s-prog",  key:"In Progress",num:c.prog,  cap:"In progress", bar:pct(c.prog) },
+      { cls:"s-todo",  key:"Not Started",num:c.todo,  cap:"Not started", bar:pct(c.todo) },
+      { cls:"s-risk",  key:"__risk",     num:c.risk,  cap:"Past milestone / overdue", bar:pct(c.risk) }
+    ];
+    $("stats").innerHTML = defs.map(function (d) {
+      var active = filters.statChip===d.key ? " active" : "";
+      return '<button class="stat '+d.cls+active+'" data-chip="'+d.key+'"><div class="num">'+d.num+'</div><div class="cap">'+d.cap+'</div><div class="bar"><span style="width:'+d.bar+'%"></span></div></button>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".stat"), function (el) {
+      el.onclick = function () { var chip=el.getAttribute("data-chip"); filters.statChip=(filters.statChip===chip)?"":chip; render(); };
+    });
+  }
+  function renderProgress() {
+    var c = counts();
+    $("track").children[0].style.width = (c.total?c.done/c.total*100:0)+"%";
+    $("track").children[1].style.width = (c.total?c.prog/c.total*100:0)+"%";
+    $("pctText").textContent = Math.round(c.total?c.done/c.total*100:0)+"%";
+  }
+  function uniq(f){ var s={}; items.forEach(function(it){ if(it[f]) s[it[f]]=true; }); return Object.keys(s).sort(); }
+  function docsForProgram(prog) {
+    var d = {}; items.forEach(function (it) { if (it.program === prog && it.document) d[it.document] = true; });
+    return Object.keys(d).sort();
+  }
+  function programLabel(prog) {
+    var ids = docsForProgram(prog);
+    return ids.length ? (ids.join(", ") + " — " + prog) : prog;
+  }
+  function renderFilters() {
+    fillSelect($("fOwner"), uniq("owner"), filters.owner, "All owners");
+    // Program filter: option value stays the title so filtering is unaffected;
+    // the visible label shows the document ID(s) in front of the title.
+    var progs = uniq("program");
+    $("fProgram").innerHTML = '<option value="">All programs</option>' + progs.map(function (p) {
+      return '<option value="' + esc(p) + '"' + (p === filters.program ? ' selected' : '') + '>' + esc(programLabel(p)) + '</option>';
+    }).join("");
+    $("ownerList").innerHTML = uniq("owner").map(function(o){return '<option>'+esc(o)+'</option>';}).join("");
+    $("docList").innerHTML = uniq("document").map(function(d){return '<option>'+esc(d)+'</option>';}).join("");
+    // Modal datalist: keep the inserted value as the plain title, but surface the
+    // document ID as the option label so it shows in the suggestion list.
+    $("progList").innerHTML = progs.map(function (p) {
+      return '<option value="' + esc(p) + '" label="' + esc(programLabel(p)) + '"></option>';
+    }).join("");
+  }
+  function fillSelect(sel, vals, current, allLabel) {
+    sel.innerHTML = '<option value="">'+allLabel+'</option>'+vals.map(function(v){return '<option'+(v===current?' selected':'')+'>'+esc(v)+'</option>';}).join("");
+  }
+  function matches(it) {
+    if (filters.owner && it.owner!==filters.owner) return false;
+    if (filters.program && it.program!==filters.program) return false;
+    if (filters.status && it.status!==filters.status) return false;
+    if (filters.statChip==="__risk") { var m=milestoneState(it); if(!(m.key==="risk"||m.key==="risk-ok"||m.key==="overdue")) return false; }
+    else if (filters.statChip && it.status!==filters.statChip) return false;
+    if (filters.search) {
+      var q=filters.search.toLowerCase();
+      var hay=[it.item,it.document,it.program,it.owner,it.notes,it.challenges,it.resources].join(" ").toLowerCase();
+      if (hay.indexOf(q)===-1) return false;
+    }
+    return true;
+  }
+  function renderRows() {
+    var rows = items.filter(matches), tb = $("tbody"), empty = $("empty");
+    $("countNote").textContent = rows.length+" of "+items.length+" item"+(items.length===1?"":"s")+" shown";
+    if (items.length===0) { tb.innerHTML=""; empty.style.display="block"; return; }
+    empty.style.display="none";
+    if (rows.length===0) { tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:34px;color:var(--muted)">No items match the current filters.</td></tr>'; return; }
+
+    tb.innerHTML = rows.map(function (it) {
+      var m = milestoneState(it);
+      var statusCls = it.status==="Complete"?"complete":it.status==="In Progress"?"progress":"notstarted";
+      var sub = "";
+      if ((it.challenges||it.resources) && it.status!=="Complete")
+        sub += '<div class="sub"><b>Challenges:</b> '+esc(it.challenges||"—")+'<br><b>Resources:</b> '+esc(it.resources||"—")+'</div>';
+      if (it.notes) sub += '<div class="sub"><b>Notes:</b> '+esc(it.notes)+'</div>';
+      var target = it.date ? '<span class="date-cell">'+fmtDate(it.date)+'</span>' : '<span class="date-cell none">Not scheduled</span>';
+      var done = it.dateCompleted ? '<span class="date-cell">'+fmtDate(it.dateCompleted)+'</span>' : '<span class="date-cell none">—</span>';
+      var signoff = it.signedOffBy
+        ? '<span class="who">✓ '+esc(it.signedOffBy)+'</span>'+(it.signOffDate?'<div class="when">'+fmtDate(it.signOffDate)+'</div>':'')
+        : '<button class="btn-sign" data-sign="'+it.id+'">Sign off</button>';
+      return '<tr>'+
+        '<td class="cell-item">'+esc(it.item)+sub+'</td>'+
+        '<td class="cell-doc"><span class="code">'+esc(it.document)+'</span><div class="prog">'+esc(it.program)+'</div></td>'+
+        '<td class="owner-tag">'+esc(it.owner)+'</td>'+
+        '<td>'+target+'</td>'+
+        '<td>'+done+'</td>'+
+        '<td><span class="pill '+statusCls+'">'+esc(it.status)+'</span></td>'+
+        '<td><span class="flag '+m.key+'">'+m.label+'</span></td>'+
+        '<td class="signoff">'+signoff+'</td>'+
+        '<td><div class="row-actions"><button class="icon-btn" data-edit="'+it.id+'">Edit</button><button class="icon-btn del" data-del="'+it.id+'">Delete</button></div></td>'+
+      '</tr>';
+    }).join("");
+
+    bind("[data-edit]", function (b){ openModal(b.getAttribute("data-edit")); });
+    bind("[data-del]",  function (b){ del(b.getAttribute("data-del")); });
+    bind("[data-sign]", function (b){ quickSign(b.getAttribute("data-sign")); });
+  }
+  function bind(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), function(b){ b.onclick=function(){ fn(b); }; }); }
+
+  function quickSign(id) {
+    var it = items.find(function(x){return x.id===id;}); if (!it) return;
+    var who = prompt("Sign off on this action item as complete.\n\nEnter your name or initials:", it.owner || "");
+    if (who===null) return;
+    who = who.trim(); if (!who) return;
+    it.signedOffBy = who; it.signOffDate = nowDate();
+    if (it.status !== "Complete") it.status = "Complete";
+    if (!it.dateCompleted) it.dateCompleted = nowDate();
+    it.updated = new Date().toISOString();
+    save();
+  }
+
+  function openModal(id) {
+    editingId = id || null;
+    var it = id ? items.find(function(x){return x.id===id;}) : null;
+    $("mTitle").textContent = id ? "Edit action item" : "Add action item";
+    $("fiItem").value = it?it.item:""; $("fiDoc").value = it?it.document:"";
+    $("fiProgram").value = it?it.program:""; $("fiOwner").value = it?it.owner:"";
+    $("fiStatus").value = it?it.status:"Not Started"; $("fiDate").value = it?(it.date||""):"";
+    $("fiChallenges").value = it?(it.challenges||""):""; $("fiResources").value = it?(it.resources||""):"";
+    $("fiCompleted").value = it?(it.dateCompleted||""):""; $("fiSignedBy").value = it?(it.signedOffBy||""):"";
+    $("fiNotes").value = it?(it.notes||""):"";
+    $("signHint").textContent = (it && it.signOffDate) ? ("Signed off "+fmtDate(it.signOffDate)) : "A sign-off date is stamped automatically when saved.";
+    clearErrors(); syncExpl();
+    $("overlay").classList.add("open");
+    setTimeout(function(){ $("fiItem").focus(); }, 40);
+  }
+  function closeModal(){ $("overlay").classList.remove("open"); editingId=null; }
+  function syncExpl() {
+    var d=$("fiDate").value, past = d && d>MILESTONE;
+    $("explBlock").classList.toggle("show", !!past);
+    if (!past) { ["fiChallenges","fiResources"].forEach(function(x){$(x).classList.remove("invalid");}); ["errChallenges","errResources"].forEach(function(x){$(x).classList.remove("show");}); }
+  }
+  function clearErrors() {
+    ["Item","Doc","Program","Owner","Challenges","Resources"].forEach(function(k){ var e=$("err"+k); if(e) e.classList.remove("show"); });
+    ["fiItem","fiDoc","fiProgram","fiOwner","fiChallenges","fiResources"].forEach(function(id){ $(id).classList.remove("invalid"); });
+  }
+  function validate() {
+    clearErrors(); var ok=true;
+    [["fiItem","errItem"],["fiDoc","errDoc"],["fiProgram","errProgram"],["fiOwner","errOwner"]].forEach(function(p){
+      if(!$(p[0]).value.trim()){ $(p[0]).classList.add("invalid"); $(p[1]).classList.add("show"); ok=false; }
+    });
+    var d=$("fiDate").value;
+    if (d && d>MILESTONE) {
+      if(!$("fiChallenges").value.trim()){ $("fiChallenges").classList.add("invalid"); $("errChallenges").classList.add("show"); ok=false; }
+      if(!$("fiResources").value.trim()){ $("fiResources").classList.add("invalid"); $("errResources").classList.add("show"); ok=false; }
+    }
+    return ok;
+  }
+  function saveModal() {
+    if (!validate()) { var f=document.querySelector(".modal .invalid"); if(f) f.focus(); return; }
+    var d=$("fiDate").value, past = d && d>MILESTONE;
+    var prev = editingId ? items.find(function(x){return x.id===editingId;}) : null;
+    var signedBy = $("fiSignedBy").value.trim();
+    var signDate = prev ? (prev.signOffDate||"") : "";
+    if (signedBy && !signDate) signDate = nowDate();
+    if (!signedBy) signDate = "";
+    var rec = {
+      id: editingId||newId(),
+      item: $("fiItem").value.trim(), document: $("fiDoc").value.trim(),
+      program: $("fiProgram").value.trim(), owner: $("fiOwner").value.trim(),
+      status: $("fiStatus").value, date: d||"",
+      challenges: past?$("fiChallenges").value.trim():"", resources: past?$("fiResources").value.trim():"",
+      dateCompleted: $("fiCompleted").value||"", signedOffBy: signedBy, signOffDate: signDate,
+      notes: $("fiNotes").value.trim(), updated: new Date().toISOString()
+    };
+    if (editingId) { var i=items.findIndex(function(x){return x.id===editingId;}); if(i>-1) items[i]=rec; }
+    else items.unshift(rec);
+    closeModal(); save();
+  }
+  function del(id) {
+    var it=items.find(function(x){return x.id===id;}); if(!it) return;
+    if(!confirm('Delete this action item?\n\n"'+it.item+'"\n\nThis cannot be undone.')) return;
+    items=items.filter(function(x){return x.id!==id;}); save();
+  }
+  function resetToSource() {
+    if(!confirm("Reload all action items from the source list?\n\nThis REPLACES the current list and will discard any scheduling, completion dates, and sign-offs entered here. Export a CSV first if you want a backup.")) return;
+    items = seedRecords(); save();
+  }
+
+  function exportCSV() {
+    if(!items.length){ alert("No items to export."); return; }
+    var cols=["Action Item","Document","Program","Owner","Status","Target Date","Past Milestone","Challenges","Resources Needed","Date Completed","Signed Off By","Sign-Off Date","Notes","Last Updated"];
+    var lines=[cols.map(csv).join(",")];
+    items.forEach(function(it){
+      var past = it.date && it.date>MILESTONE ? "Yes":"No";
+      lines.push([it.item,it.document,it.program,it.owner,it.status,it.date||"",past,it.challenges||"",it.resources||"",it.dateCompleted||"",it.signedOffBy||"",it.signOffDate||"",it.notes||"",it.updated||""].map(csv).join(","));
+    });
+    var blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8;"});
+    var url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download="SQF_Action_Items_"+nowDate()+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+  function csv(v){ v=String(v==null?"":v); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  function fmtDate(iso){ var p=String(iso).split("-"); var mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; if(p.length<3) return iso; return mo[parseInt(p[1],10)-1]+" "+parseInt(p[2],10)+", "+p[0]; }
+
+  $("addBtn").onclick=function(){ openModal(null); };
+  $("emptyAdd").onclick=function(){ openModal(null); };
+  $("closeModal").onclick=closeModal; $("cancelModal").onclick=closeModal; $("saveItem").onclick=saveModal;
+  $("exportBtn").onclick=exportCSV; $("resetBtn").onclick=resetToSource;
+  $("fiDate").addEventListener("input", syncExpl);
+  $("overlay").addEventListener("click", function(e){ if(e.target===$("overlay")) closeModal(); });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape"&&$("overlay").classList.contains("open")) closeModal(); });
+  $("search").addEventListener("input", function(e){ filters.search=e.target.value; renderRows(); });
+  $("fOwner").addEventListener("change", function(e){ filters.owner=e.target.value; renderRows(); });
+  $("fProgram").addEventListener("change", function(e){ filters.program=e.target.value; renderRows(); });
+  $("fStatus").addEventListener("change", function(e){ filters.status=e.target.value; filters.statChip=""; render(); });
+
+  load();
+})();
+</script>
