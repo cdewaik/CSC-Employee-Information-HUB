@@ -54,9 +54,12 @@
   a.folder:hover .arw{color:var(--royal)}
 
   .state{text-align:center;color:var(--muted);padding:44px 20px;font-size:.95rem}
+  .state.hide{display:none}
   .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--royal);border-radius:50%;
     animation:spin .7s linear infinite;margin:0 auto 12px}
   @keyframes spin{to{transform:rotate(360deg)}}
+  .empty{text-align:center;color:var(--muted);padding:30px 20px;font-size:.95rem;display:none}
+  .empty.show{display:block}
 
   .fallback{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
     box-shadow:var(--shadow);padding:20px;margin-top:6px}
@@ -75,7 +78,7 @@
 <header class="topbar">
   <div class="topbar-inner">
     <img class="mark" src="csc-mark.png" alt="Container Supply logo">
-    <div><div class="co" id="title-co">Container Supply</div><div class="hub" id="title-hub">Document Library</div></div>
+    <div><div class="co">Container Supply</div><div class="hub">Document Library</div></div>
   </div>
 </header>
 
@@ -83,7 +86,7 @@
   <div class="search-hero-inner">
     <div class="big-search">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input id="search" type="text" placeholder="Search folders…" autocomplete="off" disabled>
+      <input id="search" type="text" placeholder="Search folders…" autocomplete="off">
     </div>
   </div>
 </section>
@@ -96,7 +99,8 @@
 
 <main>
   <div id="state" class="state"><div class="spinner"></div>Loading folders…</div>
-  <div class="grid" id="grid" style="display:none"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty">No folders match your search.</div>
 </main>
 
 <footer>
@@ -108,70 +112,70 @@
 
 <script>
 /* =============================================================
-   EDIT THESE THREE VALUES
+   CONFIG — the only values you might change
    ============================================================= */
 const CFG = {
-  title:          'Document Library',                     // shown in the header + tab
-  feedUrl:        'https://script.google.com/a/macros/cscmfg.com/s/AKfycbz6aIkVhhF7WMpHLqQxxN68jIElVQgSdMlWFAiVWkEzcRhW_QtRW_yUw92W4y-ny7PO/exec',             // the Apps Script folder-index web app
-  parentFolderId: '1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk'      // used for the "open in Drive" link + fallback view
+  feedUrl:        'https://script.google.com/a/macros/cscmfg.com/s/AKfycbyBbD6vSqF834ErCWQTZ5bPgq693xPjl7dvFEBMF1KwfBRG057aOOuDkGsc_bTtBLc-/exec',
+  parentFolderId: '1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk'   // for "open in Drive" + fallback view
 };
 /* ============================================================= */
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const FOLDER_SVG = '<svg viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>';
 
-document.getElementById('title-hub').textContent = CFG.title;
-document.title = CFG.title + ' · Container Supply';
+const grid   = document.getElementById('grid');
+const state  = document.getElementById('state');
+const empty  = document.getElementById('empty');
+const count  = document.getElementById('count');
+const search = document.getElementById('search');
+
 document.getElementById('open-drive').href = 'https://drive.google.com/drive/folders/' + CFG.parentFolderId;
 
-let allFolders = [];
+let total = 0;
+
+/* search always works on whatever cards are currently rendered */
+function applyFilter(){
+  const q = search.value.trim().toLowerCase();
+  let shown = 0;
+  grid.querySelectorAll('a.folder').forEach(el => {
+    const hit = !q || el.getAttribute('data-name').indexOf(q) > -1;
+    el.style.display = hit ? '' : 'none';
+    if(hit) shown++;
+  });
+  empty.classList.toggle('show', total > 0 && shown === 0);
+  count.textContent = total === 0 ? '' :
+    (shown === total ? total + ' folder' + (total===1?'':'s') : shown + ' of ' + total + ' folders');
+}
+search.addEventListener('input', applyFilter);
 
 function render(folders){
-  allFolders = folders;
-  const grid = document.getElementById('grid');
-  grid.innerHTML = folders.map(f =>
-    `<a class="folder" data-name="${esc((f.name||'').toLowerCase())}" href="${esc(f.url)}" target="_blank" rel="noopener">
+  const items = folders.slice().sort((a,b) =>
+    String(a.name).localeCompare(String(b.name), undefined, {numeric:true, sensitivity:'base'}));
+  total = items.length;
+  grid.innerHTML = items.map(f =>
+    `<a class="folder" data-name="${esc(String(f.name||'').toLowerCase())}" href="${esc(f.url||'#')}" target="_blank" rel="noopener">
        <span class="ico">${FOLDER_SVG}</span>
        <span class="nm">${esc(f.name||'(untitled)')}</span>
        <span class="arw">↗</span>
      </a>`).join('');
-  document.getElementById('state').style.display = 'none';
-  grid.style.display = 'grid';
-
-  const search = document.getElementById('search');
-  search.disabled = false;
-  search.addEventListener('input', applyFilter);
-  updateCount(folders.length, folders.length);
-}
-
-function applyFilter(){
-  const q = document.getElementById('search').value.trim().toLowerCase();
-  let shown = 0;
-  document.querySelectorAll('a.folder').forEach(el => {
-    const hit = !q || el.dataset.name.includes(q);
-    el.style.display = hit ? '' : 'none';
-    if(hit) shown++;
-  });
-  updateCount(shown, allFolders.length);
-}
-
-function updateCount(shown, total){
-  document.getElementById('count').textContent =
-    (shown === total) ? (total + ' folder' + (total===1?'':'s')) : (shown + ' of ' + total + ' folders');
+  state.classList.add('hide');
+  applyFilter();
 }
 
 function showFallback(msg){
-  document.getElementById('state').innerHTML =
-    `<div class="fallback">
+  state.classList.add('hide');
+  grid.innerHTML =
+    `<div class="fallback" style="grid-column:1/-1">
        <p>${esc(msg)}</p>
        <a class="btn" href="https://drive.google.com/drive/folders/${esc(CFG.parentFolderId)}" target="_blank" rel="noopener">Open folder in Google Drive ↗</a>
        <iframe src="https://drive.google.com/embeddedfolderview?id=${esc(CFG.parentFolderId)}#list" title="Folder contents"></iframe>
      </div>`;
 }
 
-function load(){
+/* load the live folder list via a <script> tag (JSONP) — no cross-origin block */
+(function load(){
   if(!/^https:\/\/script\.google\.com\//.test(CFG.feedUrl)){
-    showFallback('This page isn’t connected to its folder feed yet. Showing a live view of the folder below in the meantime.');
+    showFallback('Not connected to a folder feed yet. Showing a live view of the folder below.');
     return;
   }
   const cb = '__folders_' + Math.random().toString(36).slice(2);
@@ -190,8 +194,7 @@ function load(){
   script.onerror = fail;
   script.src = url;
   document.head.appendChild(script);
-}
-load();
+})();
 </script>
 </body>
 </html>
