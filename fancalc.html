@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exhaust CFM &amp; Garage Ventilation Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1F4E79;
+    --navy-light: #2E6DA4;
+    --navy-bg: #E6F1FB;
+    --orange: #C55A11;
+    --orange-bg: #FCE4D6;
+    --green: #375623;
+    --green-bg: #E2EFDA;
+    --green-mid: #507E34;
+    --red: #9B2226;
+    --red-bg: #FDECEA;
+    --amber: #7B5E00;
+    --amber-bg: #FFF8DC;
+    --gray-50: #F7F7F6;
+    --gray-100: #EBEBEA;
+    --gray-200: #D4D4D2;
+    --gray-400: #8A8A87;
+    --gray-700: #3D3D3B;
+    --gray-900: #1A1A19;
+    --bg: #F2F4F7;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.09);
+    --border-strong: rgba(0,0,0,0.18);
+    --font: 'IBM Plex Sans', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--gray-900);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .app-header {
+    background: var(--navy);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .app-header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.01em;
+  }
+  .app-header p {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 2px;
+  }
+  .header-badge {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.2);
+    font-family: var(--mono);
+  }
+
+  /* ── Layout ── */
+  .app-body {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 3rem;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .gap-14 { gap: 14px; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-title svg { flex-shrink: 0; }
+
+  /* ── Metric tiles ── */
+  .metric-tile {
+    background: var(--gray-50);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--gray-400); margin-bottom: 4px; font-weight: 500; }
+  .metric-value { font-size: 26px; font-weight: 600; color: var(--gray-900); line-height: 1; font-family: var(--mono); }
+  .metric-unit { font-size: 12px; font-weight: 400; color: var(--gray-400); margin-left: 3px; font-family: var(--font); }
+  .metric-tile.green .metric-value { color: var(--green-mid); }
+  .metric-tile.orange .metric-value { color: var(--orange); }
+  .metric-tile.navy .metric-value { color: var(--navy-light); }
+
+  /* ── Inputs ── */
+  .input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .input-row:last-child { border-bottom: none; }
+  .input-label { font-size: 13px; color: var(--gray-700); flex: 1; }
+  .input-hint { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+  .input-ctrl { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .input-ctrl input[type=number] {
+    width: 88px;
+    text-align: right;
+    font-size: 13px;
+    font-family: var(--mono);
+    padding: 5px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--navy);
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield;
+  }
+  .input-ctrl input[type=number]::-webkit-inner-spin-button,
+  .input-ctrl input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .input-ctrl input[type=number]:focus {
+    border-color: var(--navy-light);
+    box-shadow: 0 0 0 3px rgba(30,78,121,0.1);
+  }
+  .input-ctrl .unit {
+    font-size: 11px;
+    color: var(--gray-400);
+    min-width: 46px;
+    text-align: left;
+  }
+
+  /* ── Result rows ── */
+  .result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-label { font-size: 13px; color: var(--gray-400); }
+  .result-val { font-size: 14px; font-weight: 600; font-family: var(--mono); color: var(--gray-700); }
+
+  /* ── Key output blocks ── */
+  .key-output {
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 12px;
+  }
+  .key-output.green { background: var(--green-bg); }
+  .key-output.orange { background: var(--orange-bg); }
+  .key-output-label { font-size: 12px; font-weight: 600; }
+  .key-output.green .key-output-label { color: var(--green); }
+  .key-output.orange .key-output-label { color: var(--orange); }
+  .key-output-value { font-size: 22px; font-weight: 600; font-family: var(--mono); }
+  .key-output.green .key-output-value { color: var(--green-mid); }
+  .key-output.orange .key-output-value { color: var(--orange); }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+  .badge-navy { background: var(--navy-bg); color: var(--navy); }
+  .badge-orange { background: var(--orange-bg); color: var(--orange); }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+
+  /* ── ACH gauge ── */
+  .ach-section { margin-top: 14px; }
+  .ach-row { margin-bottom: 12px; }
+  .ach-row-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .ach-row-label { font-size: 12px; color: var(--gray-700); font-weight: 500; }
+  .ach-row-range { font-size: 11px; color: var(--gray-400); }
+  .ach-bar-track { height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden; }
+  .ach-bar-fill { height: 100%; border-radius: 3px; transition: width 0.35s ease; }
+
+  /* ── Tip banner ── */
+  .tip-banner {
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px;
+    margin-top: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+  }
+  .tip-banner.info { background: var(--navy-bg); color: var(--navy); }
+  .tip-banner.warn { background: var(--amber-bg); color: var(--amber); }
+  .tip-banner.ok   { background: var(--green-bg); color: var(--green); }
+  .tip-banner.danger { background: var(--red-bg); color: var(--red); }
+
+  /* ── Reference table ── */
+  .ref-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ref-table th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gray-400); padding: 6px 10px; border-bottom: 1px solid var(--border-strong); }
+  .ref-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--gray-700); vertical-align: middle; }
+  .ref-table tr:last-child td { border-bottom: none; }
+  .ref-table tr:hover td { background: var(--gray-50); }
+
+  /* ── Formula strip ── */
+  .formula-strip {
+    background: var(--gray-900);
+    color: #8FC7EF;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    margin-top: 14px;
+    line-height: 1.7;
+  }
+  .formula-strip .comment { color: #5A7A5A; }
+  .formula-strip .val { color: #F5C07A; }
+
+  /* ── Reset button ── */
+  .btn-reset {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.8);
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-reset:hover { background: rgba(255,255,255,0.1); }
+
+  /* ── Header controls + unit toggle ── */
+  .header-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .unit-toggle {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 22px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .unit-toggle-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    padding: 0 8px 0 10px;
+    letter-spacing: 0.02em;
+  }
+  .unit-toggle button {
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.75);
+    background: transparent;
+    border: none;
+    padding: 5px 16px;
+    border-radius: 18px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .unit-toggle button:hover { color: #fff; }
+  .unit-toggle button.active {
+    background: #fff;
+    color: var(--navy);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+
+  /* ── Section spacer ── */
+  .section-gap { margin-top: 14px; }
+
+  /* ── Print / export note ── */
+  .footer { text-align: center; font-size: 11px; color: var(--gray-400); margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+  @media (max-width: 700px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .app-body { padding: 1rem; }
+    .app-header { padding: 1rem; }
+  }
+  @media print {
+    .app-header { position: static; }
+    .btn-reset { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <h1>Exhaust CFM &amp; Garage Ventilation Calculator</h1>
+    <p>Gasoline &amp; Diesel &nbsp;·&nbsp; 4-Stroke NA &amp; Turbocharged &nbsp;·&nbsp; Exhaust fan sizing</p>
+  </div>
+  <div class="header-controls">
+    <div class="unit-toggle" role="group" aria-label="Displacement units">
+      <span class="unit-toggle-label">Displacement</span>
+      <button type="button" id="btn-ci" class="active" onclick="setUnit('ci')">cu in</button>
+      <button type="button" id="btn-cc" onclick="setUnit('cc')">cc</button>
+    </div>
+    <button class="btn-reset" onclick="reset()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      Reset to defaults
+    </button>
+  </div>
+</header>
+
+<main class="app-body">
+
+  <!-- Metric tiles -->
+  <div class="grid-4 section-gap" style="margin-bottom:14px;">
+    <div class="metric-tile navy">
+      <p class="metric-label">Intake air flow</p>
+      <p class="metric-value" id="t-intake">253<span class="metric-unit">CFM</span></p>
+    </div>
+    <div class="metric-tile green">
+      <p class="metric-label">Total exhaust CFM</p>
+      <p class="metric-value" id="t-exhaust">316<span class="metric-unit">CFM</span></p>
+    </div>
+    <div class="metric-tile">
+      <p class="metric-label">CFM per cylinder</p>
+      <p class="metric-value" id="t-percyl">39.5<span class="metric-unit">CFM</span></p>
+    </div>
+    <div class="metric-tile orange">
+      <p class="metric-label">Min. fan required</p>
+      <p class="metric-value" id="t-fan">500<span class="metric-unit">CFM</span></p>
+    </div>
+  </div>
+
+  <!-- Row 1: Inputs -->
+  <div class="grid-2" style="margin-bottom:14px;">
+
+    <div class="card">
+      <p class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Engine inputs
+      </p>
+      <div class="input-row">
+        <div><p class="input-label">Displacement</p><p class="input-hint" id="disp-hint">Convert L &rarr; ci: multiply by 61.02</p></div>
+        <div class="input-ctrl"><input type="number" id="disp" value="350" min="50" max="750" step="1" oninput="calc()"><span class="unit" id="disp-unit">cu in</span></div>
+      </div>
+      <div class="input-row">
+        <div><p class="input-label">Operating RPM</p><p class="input-hint">Use max RPM for worst-case sizing</p></div>
+        <div class="input-ctrl"><input type="number" id="rpm" value="2500" min="500" max="8000" step="100" oninput="calc()"><span class="unit">RPM</span></div>
+      </div>
+      <div class="input-row">
+        <div><p class="input-label">Number of cylinders</p></div>
+        <div class="input-ctrl"><input type="number" id="cyl" value="8" min="2" max="16" step="1" oninput="calc()"><span class="unit">count</span></div>
+      </div>
+      <div class="input-row">
+        <div><p class="input-label">Volumetric efficiency (VE)</p><p class="input-hint">Stock NA: 0.75–0.90 · Turbo: 0.95–1.15</p></div>
+        <div class="input-ctrl"><input type="number" id="ve" value="0.85" min="0.5" max="1.3" step="0.01" oninput="calc()"><span class="unit">decimal</span></div>
+      </div>
+      <div class="input-row">
+        <div><p class="input-label">Exhaust expansion factor</p><p class="input-hint">Stock: 1.20–1.25 · Performance: 1.30–1.35</p></div>
+        <div class="input-ctrl"><input type="number" id="exp" value="1.25" min="1.0" max="1.5" step="0.01" oninput="calc()"><span class="unit">×</span></div>
+      </div>
+
+      <div class="formula-strip">
+        <span class="comment" id="f-comment">// CFM formula</span><br>
+        <span id="f-line">intake  = (disp × rpm × ve) / 3,456</span><br>
+        exhaust = intake × <span class="val" id="f-exp">1.25</span> &nbsp;<span class="comment">← expansion</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Garage / shop inputs
+      </p>
+      <div class="input-row">
+        <div><p class="input-label">Length</p><p class="input-hint">Interior dimension</p></div>
+        <div class="input-ctrl"><input type="number" id="glen" value="20" min="8" max="300" step="1" oninput="calc()"><span class="unit">ft</span></div>
+      </div>
+      <div class="input-row">
+        <div><p class="input-label">Width</p><p class="input-hint">Interior dimension</p></div>
+        <div class="input-ctrl"><input type="number" id="gwid" value="20" min="8" max="300" step="1" oninput="calc()"><span class="unit">ft</span></div>
+      </div>
+      <div class="input-row">
+        <div><p class="input-label">Ceiling height</p><p class="input-hint">Residential: 8–10 ft · Shop: 10–16 ft</p></div>
+        <div class="input-ctrl"><input type="number" id="gceil" value="10" min="7" max="30" step="1" oninput="calc()"><span class="unit">ft</span></div>
+      </div>
+      <div class="input-row">
+        <div><p class="input-label">Air changes per hour (ACH)</p><p class="input-hint">Min 6 for vehicle exhaust · 10+ for dyno</p></div>
+        <div class="input-ctrl"><input type="number" id="ach" value="6" min="1" max="20" step="1" oninput="calc()"><span class="unit">ACH</span></div>
+      </div>
+      <div class="input-row">
+        <div><p class="input-label">Safety / duct loss multiplier</p><p class="input-hint">1.25 minimum · 1.50 for long duct runs</p></div>
+        <div class="input-ctrl"><input type="number" id="safety" value="1.25" min="1.0" max="2.0" step="0.05" oninput="calc()"><span class="unit">×</span></div>
+      </div>
+
+      <div class="formula-strip">
+        <span class="comment">// Fan sizing</span><br>
+        room_cfm = (L × W × H × ACH) / 60<br>
+        fan_cfm  = max(room_cfm, exhaust) × <span class="val" id="f-safety">1.25</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Results + ACH -->
+  <div class="grid-2" style="margin-bottom:14px;">
+
+    <div class="grid-2 gap-14" style="align-content:start;">
+
+      <div class="card">
+        <p class="card-title">Engine exhaust output</p>
+        <div class="result-row">
+          <span class="result-label">Intake air flow</span>
+          <span class="result-val" id="r-intake">253 CFM</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Expansion factor</span>
+          <span class="result-val" id="r-exp">× 1.25</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Per cylinder</span>
+          <span class="result-val" id="r-percyl">39.5 CFM</span>
+        </div>
+        <div class="key-output green">
+          <span class="key-output-label">★ Total exhaust CFM</span>
+          <span class="key-output-value" id="r-exhaust">316 CFM</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Fan sizing</p>
+        <div class="result-row">
+          <span class="result-label">Room air-change CFM</span>
+          <span class="result-val" id="r-achcfm">400 CFM</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Engine exhaust CFM</span>
+          <span class="result-val" id="r-engcfm">316 CFM</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Governing value</span>
+          <span id="r-govbadge"><span class="badge badge-navy">room ACH</span></span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Safety multiplier</span>
+          <span class="result-val" id="r-safetyval">× 1.25</span>
+        </div>
+        <div class="key-output orange">
+          <span class="key-output-label">★ Min. fan CFM</span>
+          <span class="key-output-value" id="r-fan">500 CFM</span>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: 1 / -1;">
+        <p class="card-title">Garage volume</p>
+        <div class="result-row">
+          <span class="result-label">Floor area</span>
+          <span class="result-val" id="r-area">400 ft²</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Total air volume</span>
+          <span class="result-val" id="r-vol">4,000 ft³</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Air changes / hr set</span>
+          <span class="result-val" id="r-ach">6 ACH</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">ACH context — your setting vs. guidelines</p>
+      <div class="ach-section">
+        <div class="ach-row">
+          <div class="ach-row-header">
+            <span class="ach-row-label">Residential garage (code min)</span>
+            <span class="ach-row-range">4–6 ACH</span>
+          </div>
+          <div class="ach-bar-track"><div class="ach-bar-fill" id="bar-res" style="width:0%"></div></div>
+        </div>
+        <div class="ach-row">
+          <div class="ach-row-header">
+            <span class="ach-row-label">Working shop / daily driver bay</span>
+            <span class="ach-row-range">6–8 ACH (ASHRAE 62.1)</span>
+          </div>
+          <div class="ach-bar-track"><div class="ach-bar-fill" id="bar-shop" style="width:0%"></div></div>
+        </div>
+        <div class="ach-row">
+          <div class="ach-row-header">
+            <span class="ach-row-label">Enclosed dyno / race shop</span>
+            <span class="ach-row-range">10–15 ACH (OSHA/ACGIH)</span>
+          </div>
+          <div class="ach-bar-track"><div class="ach-bar-fill" id="bar-dyno" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div id="ach-tip" class="tip-banner ok"></div>
+
+      <!-- Reference table -->
+      <p class="card-title" style="margin-top:20px;">VE &amp; expansion factor reference</p>
+      <table class="ref-table">
+        <thead>
+          <tr><th>Engine type</th><th>VE range</th><th>Exp. factor</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Stock gasoline NA (V8/V6)</td><td>0.75–0.90</td><td>1.20–1.25</td></tr>
+          <tr><td>Performance NA (ported/cam)</td><td>0.90–1.05</td><td>1.25–1.30</td></tr>
+          <tr><td>Diesel NA (truck/industrial)</td><td>0.85–0.95</td><td>1.20–1.25</td></tr>
+          <tr><td>Turbocharged gasoline</td><td>0.95–1.15</td><td>1.30–1.40</td></tr>
+          <tr><td>Turbocharged diesel</td><td>1.00–1.20+</td><td>1.30–1.45</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <p>Exhaust CFM &amp; Garage Ventilation Calculator &nbsp;·&nbsp; <span id="footer-formula">Formula: CFM = (Displacement × RPM × VE) / 3,456 × Expansion Factor</span> &nbsp;·&nbsp; Open in any browser &nbsp;·&nbsp; <a href="javascript:window.print()" style="color:inherit;">Print / save as PDF</a></p>
+</footer>
+
+<script>
+/* ── Displacement unit definitions ──
+   The only real difference between the two original calculators was the
+   displacement unit and the divisor in the intake formula.
+   1 cubic inch = 16.387064 cc, so 3,456 (cu in) × 16.387 ≈ 56,632 (cc). */
+var CI_TO_CC = 16.387064;
+var currentUnit = 'ci';
+var UNITS = {
+  ci: {
+    divisor: 3456,
+    label: 'cu in',
+    hint: 'Convert L &rarr; ci: multiply by 61.02',
+    min: 50, max: 750, step: 1,
+    def: 350,
+    fComment: '// CFM formula',
+    fLine: 'intake  = (disp × rpm × ve) / 3,456',
+    footer: 'Formula: CFM = (Displacement × RPM × VE) / 3,456 × Expansion Factor'
+  },
+  cc: {
+    divisor: 56632,
+    label: 'cc',
+    hint: 'Convert L &rarr; cc: multiply by 1000 (e.g. 5.7L = 5700 cc)',
+    min: 100, max: 12000, step: 10,
+    def: 5735,
+    fComment: '// CFM formula (cc input)',
+    fLine: 'intake  = (disp_cc × rpm × ve) / 56,632',
+    footer: 'Formula: CFM = (Displacement_cc × RPM × VE) / 56,632 × Expansion Factor'
+  }
+};
+
+function setUnit(unit) {
+  if (unit === currentUnit || !UNITS[unit]) return;
+  var dispEl = document.getElementById('disp');
+  var val = parseFloat(dispEl.value) || 0;
+
+  // Convert the entered displacement so it's the same physical engine
+  if (unit === 'cc' && currentUnit === 'ci') val = Math.round(val * CI_TO_CC);
+  else if (unit === 'ci' && currentUnit === 'cc') val = Math.round(val / CI_TO_CC);
+
+  currentUnit = unit;
+  var u = UNITS[unit];
+
+  dispEl.min = u.min; dispEl.max = u.max; dispEl.step = u.step;
+  dispEl.value = val;
+  document.getElementById('disp-unit').textContent = u.label;
+  document.getElementById('disp-hint').innerHTML = u.hint;
+  document.getElementById('f-comment').textContent = u.fComment;
+  document.getElementById('f-line').textContent = u.fLine;
+  document.getElementById('footer-formula').textContent = u.footer;
+
+  document.getElementById('btn-ci').classList.toggle('active', unit === 'ci');
+  document.getElementById('btn-cc').classList.toggle('active', unit === 'cc');
+
+  calc();
+}
+
+function fmt(n, dec) {
+  if (isNaN(n) || !isFinite(n)) return '—';
+  dec = dec === undefined ? 0 : dec;
+  return n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+function calc() {
+  const disp  = parseFloat(document.getElementById('disp').value)   || 0;
+  const rpm   = parseFloat(document.getElementById('rpm').value)    || 0;
+  const cyl   = parseFloat(document.getElementById('cyl').value)    || 1;
+  const ve    = parseFloat(document.getElementById('ve').value)     || 0.85;
+  const exp   = parseFloat(document.getElementById('exp').value)    || 1.25;
+  const glen  = parseFloat(document.getElementById('glen').value)   || 0;
+  const gwid  = parseFloat(document.getElementById('gwid').value)   || 0;
+  const gceil = parseFloat(document.getElementById('gceil').value)  || 0;
+  const ach   = parseFloat(document.getElementById('ach').value)    || 6;
+  const safe  = parseFloat(document.getElementById('safety').value) || 1.25;
+
+  const intake  = (disp * rpm / UNITS[currentUnit].divisor) * ve;
+  const exhaust = intake * exp;
+  const perCyl  = cyl > 0 ? exhaust / cyl : 0;
+  const area    = glen * gwid;
+  const vol     = area * gceil;
+  const achCFM  = (vol * ach) / 60;
+  const govVal  = Math.max(achCFM, exhaust);
+  const fanCFM  = govVal * safe;
+  const isEngineGov = exhaust >= achCFM;
+
+  // Metric tiles
+  document.getElementById('t-intake').innerHTML  = fmt(intake) + '<span class="metric-unit">CFM</span>';
+  document.getElementById('t-exhaust').innerHTML = fmt(exhaust) + '<span class="metric-unit">CFM</span>';
+  document.getElementById('t-percyl').innerHTML  = fmt(perCyl, 1) + '<span class="metric-unit">CFM</span>';
+  document.getElementById('t-fan').innerHTML     = fmt(fanCFM) + '<span class="metric-unit">CFM</span>';
+
+  // Result panel - engine
+  document.getElementById('r-intake').textContent = fmt(intake) + ' CFM';
+  document.getElementById('r-exp').textContent    = '× ' + exp.toFixed(2);
+  document.getElementById('r-percyl').textContent = fmt(perCyl, 1) + ' CFM';
+  document.getElementById('r-exhaust').textContent = fmt(exhaust) + ' CFM';
+
+  // Result panel - fan
+  document.getElementById('r-achcfm').textContent   = fmt(achCFM) + ' CFM';
+  document.getElementById('r-engcfm').textContent   = fmt(exhaust) + ' CFM';
+  document.getElementById('r-safetyval').textContent = '× ' + safe.toFixed(2);
+  document.getElementById('r-fan').textContent      = fmt(fanCFM) + ' CFM';
+
+  // Governing badge
+  const govBadge = document.getElementById('r-govbadge');
+  govBadge.innerHTML = isEngineGov
+    ? '<span class="badge badge-orange">engine exhaust</span>'
+    : '<span class="badge badge-navy">room ACH</span>';
+
+  // Garage volume
+  document.getElementById('r-area').textContent = fmt(area) + ' ft²';
+  document.getElementById('r-vol').textContent  = fmt(vol) + ' ft³';
+  document.getElementById('r-ach').textContent  = ach + ' ACH';
+
+  // Formula strip
+  document.getElementById('f-exp').textContent    = exp.toFixed(2);
+  document.getElementById('f-safety').textContent = safe.toFixed(2);
+
+  // ACH bars
+  const achColor = ach < 4 ? '#9B2226' : ach < 6 ? '#7B5E00' : '#375623';
+  const bars = [
+    { id: 'bar-res',  max: 8  },
+    { id: 'bar-shop', max: 10 },
+    { id: 'bar-dyno', max: 16 },
+  ];
+  bars.forEach(b => {
+    const el = document.getElementById(b.id);
+    const pct = Math.min(100, (ach / b.max) * 100);
+    el.style.width = pct + '%';
+    el.style.background = achColor;
+  });
+
+  // ACH tip
+  const tip = document.getElementById('ach-tip');
+  let cls, msg;
+  if (ach < 4) {
+    cls = 'danger';
+    msg = '<strong>Warning:</strong> ACH of ' + ach + ' is below residential code minimums. Increase to at least 6 for any space running vehicle exhaust.';
+  } else if (ach < 6) {
+    cls = 'warn';
+    msg = '<strong>Below minimum:</strong> ACH of ' + ach + ' is below the recommended 6 ACH for vehicle exhaust environments.';
+  } else if (ach < 8) {
+    cls = 'ok';
+    msg = '<strong>Meets residential minimum</strong> at ' + ach + ' ACH. Consider 8+ for a working shop with regular engine runs.';
+  } else if (ach < 10) {
+    cls = 'ok';
+    msg = '<strong>Meets ASHRAE 62.1</strong> at ' + ach + ' ACH — suitable for a working shop or daily driver bay.';
+  } else {
+    cls = 'ok';
+    msg = '<strong>Meets OSHA/ACGIH guidance</strong> at ' + ach + ' ACH — appropriate for enclosed dyno rooms and race shops.';
+  }
+  tip.className = 'tip-banner ' + cls;
+  tip.innerHTML = msg;
+}
+
+function reset() {
+  const defaults = { disp:UNITS[currentUnit].def, rpm:2500, cyl:8, ve:0.85, exp:1.25, glen:20, gwid:20, gceil:10, ach:6, safety:1.25 };
+  Object.entries(defaults).forEach(([id, val]) => { document.getElementById(id).value = val; });
+  calc();
+}
+
+calc();
+</script>
+</body>
+</html>
