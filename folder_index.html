@@ -16,7 +16,6 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Source Sans 3',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.5}
-  .serif{font-family:'Source Serif 4',Georgia,serif}
 
   header.topbar{background:var(--surface);border-bottom:1px solid var(--line);
     box-shadow:0 1px 0 rgba(18,33,80,.04),0 6px 18px rgba(18,33,80,.04);position:sticky;top:0;z-index:50}
@@ -53,20 +52,8 @@
   a.folder .arw{color:#b7c0d4;font-size:.9rem}
   a.folder:hover .arw{color:var(--royal)}
 
-  .state{text-align:center;color:var(--muted);padding:44px 20px;font-size:.95rem}
-  .state.hide{display:none}
-  .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--royal);border-radius:50%;
-    animation:spin .7s linear infinite;margin:0 auto 12px}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .empty{text-align:center;color:var(--muted);padding:30px 20px;font-size:.95rem;display:none}
+  .empty{text-align:center;color:var(--muted);padding:44px 20px;font-size:.95rem;display:none}
   .empty.show{display:block}
-
-  .fallback{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-    box-shadow:var(--shadow);padding:20px;margin-top:6px}
-  .fallback p{color:var(--muted);font-size:.9rem;margin-bottom:12px}
-  .fallback .btn{display:inline-block;background:var(--royal);color:#fff;text-decoration:none;
-    padding:9px 16px;border-radius:8px;font-weight:600;font-size:.9rem}
-  .fallback iframe{width:100%;height:420px;border:1px solid var(--line);border-radius:8px;margin-top:14px;background:#fff}
 
   footer{background:var(--navy);color:rgba(255,255,255,.72)}
   .foot{max-width:1120px;margin:0 auto;padding:22px 28px;font-size:.78rem;letter-spacing:.03em;
@@ -92,14 +79,11 @@
 </section>
 
 <div class="subbar">
-  <!-- Root-relative path to the hub — works from anywhere in the repo.
-       If you rename the repo or the homepage file, update this path. -->
-  <a class="back" href="/CSC-Employee-Information-HUB/container-supply-info-hub.html">&larr; Back to Info Hub</a>
+  <a class="back" href="https://cdewaik.github.io/CSC-Employee-Information-HUB/container-supply-info-hub.html">&larr; Back to Info Hub</a>
   <span class="count" id="count"></span>
 </div>
 
 <main>
-  <div id="state" class="state"><div class="spinner"></div>Loading folders…</div>
   <div class="grid" id="grid"></div>
   <div class="empty" id="empty">No folders match your search.</div>
 </main>
@@ -107,94 +91,70 @@
 <footer>
   <div class="foot">
     <div>Container Supply Co. &bull; Internal Document Library</div>
-    <div><a id="open-drive" href="#" target="_blank" rel="noopener">Open the parent folder in Google Drive ↗</a></div>
+    <div><a href="https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk" target="_blank" rel="noopener">Open the parent folder in Google Drive ↗</a></div>
   </div>
 </footer>
 
 <script>
-/* =============================================================
-   CONFIG — the only values you might change
-   ============================================================= */
-const CFG = {
-  feedUrl:        'https://script.google.com/a/macros/cscmfg.com/s/AKfycbyBbD6vSqF834ErCWQTZ5bPgq693xPjl7dvFEBMF1KwfBRG057aOOuDkGsc_bTtBLc-/exec',
-  parentFolderId: '1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk'   // for "open in Drive" + fallback view
-};
-/* ============================================================= */
+/* ===================================================================
+   ██  THE FOLDER LIST — THIS IS THE ONLY PART YOU EDIT  ██
+   -------------------------------------------------------------------
+   Each line is one folder:  { name: 'Folder name', url: 'https://…' }
 
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const FOLDER_SVG = '<svg viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>';
+   The entries below are SAMPLES so the search works right away. Replace
+   them with your real folders. Easiest way: run the one-time script
+   "AppsScript_ListFolders.gs" (you press Run, you do NOT deploy it, so
+   there are no login/access settings), copy what it prints, and paste it
+   here in place of this whole list. Or just type each folder by hand.
+   =================================================================== */
+const FOLDERS = [
+  { name: 'Approved Supplier Program', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
+  { name: 'Corrective Actions (CAPA)', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
+  { name: 'HACCP & Food Safety Plans', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
+  { name: 'Internal Audits', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
+  { name: 'Pest Control', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
+  { name: 'Sanitation', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
+  { name: 'Training Records', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' }
+];
+/* =================================================================== */
 
-const grid   = document.getElementById('grid');
-const state  = document.getElementById('state');
-const empty  = document.getElementById('empty');
-const count  = document.getElementById('count');
-const search = document.getElementById('search');
+(function(){
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const FOLDER_SVG = '<svg viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>';
 
-document.getElementById('open-drive').href = 'https://drive.google.com/drive/folders/' + CFG.parentFolderId;
+  const grid   = document.getElementById('grid');
+  const empty  = document.getElementById('empty');
+  const count  = document.getElementById('count');
+  const search = document.getElementById('search');
 
-let total = 0;
-
-/* search always works on whatever cards are currently rendered */
-function applyFilter(){
-  const q = search.value.trim().toLowerCase();
-  let shown = 0;
-  grid.querySelectorAll('a.folder').forEach(el => {
-    const hit = !q || el.getAttribute('data-name').indexOf(q) > -1;
-    el.style.display = hit ? '' : 'none';
-    if(hit) shown++;
-  });
-  empty.classList.toggle('show', total > 0 && shown === 0);
-  count.textContent = total === 0 ? '' :
-    (shown === total ? total + ' folder' + (total===1?'':'s') : shown + ' of ' + total + ' folders');
-}
-search.addEventListener('input', applyFilter);
-
-function render(folders){
-  const items = folders.slice().sort((a,b) =>
+  const items = FOLDERS.slice().sort((a,b) =>
     String(a.name).localeCompare(String(b.name), undefined, {numeric:true, sensitivity:'base'}));
-  total = items.length;
+
   grid.innerHTML = items.map(f =>
     `<a class="folder" data-name="${esc(String(f.name||'').toLowerCase())}" href="${esc(f.url||'#')}" target="_blank" rel="noopener">
        <span class="ico">${FOLDER_SVG}</span>
        <span class="nm">${esc(f.name||'(untitled)')}</span>
        <span class="arw">↗</span>
      </a>`).join('');
-  state.classList.add('hide');
-  applyFilter();
-}
 
-function showFallback(msg){
-  state.classList.add('hide');
-  grid.innerHTML =
-    `<div class="fallback" style="grid-column:1/-1">
-       <p>${esc(msg)}</p>
-       <a class="btn" href="https://drive.google.com/drive/folders/${esc(CFG.parentFolderId)}" target="_blank" rel="noopener">Open folder in Google Drive ↗</a>
-       <iframe src="https://drive.google.com/embeddedfolderview?id=${esc(CFG.parentFolderId)}#list" title="Folder contents"></iframe>
-     </div>`;
-}
+  const cards = Array.prototype.slice.call(grid.querySelectorAll('a.folder'));
 
-/* load the live folder list via a <script> tag (JSONP) — no cross-origin block */
-(function load(){
-  if(!/^https:\/\/script\.google\.com\//.test(CFG.feedUrl)){
-    showFallback('Not connected to a folder feed yet. Showing a live view of the folder below.');
-    return;
+  function apply(){
+    const q = search.value.trim().toLowerCase();
+    let shown = 0;
+    cards.forEach(el => {
+      const hit = !q || el.getAttribute('data-name').indexOf(q) > -1;
+      el.style.display = hit ? '' : 'none';
+      if(hit) shown++;
+    });
+    empty.classList.toggle('show', shown === 0);
+    count.textContent = (shown === items.length)
+      ? items.length + ' folder' + (items.length===1?'':'s')
+      : shown + ' of ' + items.length + ' folders';
   }
-  const cb = '__folders_' + Math.random().toString(36).slice(2);
-  const url = CFG.feedUrl + (CFG.feedUrl.indexOf('?') > -1 ? '&' : '?') + 'callback=' + cb;
-  const script = document.createElement('script');
-  let settled = false;
-  const cleanup = () => { clearTimeout(timer); try{ delete window[cb]; }catch(e){ window[cb]=undefined; } script.remove(); };
-  const fail = () => { if(settled) return; settled = true; cleanup();
-    showFallback('Couldn’t load the folder list right now. You can browse the folder directly below.'); };
-  const timer = setTimeout(fail, 20000);
-  window[cb] = (resp) => {
-    if(settled) return; settled = true; cleanup();
-    if(resp && resp.ok && Array.isArray(resp.folders)) render(resp.folders);
-    else fail();
-  };
-  script.onerror = fail;
-  script.src = url;
-  document.head.appendChild(script);
+
+  search.addEventListener('input', apply);
+  apply();
 })();
 </script>
 </body>
