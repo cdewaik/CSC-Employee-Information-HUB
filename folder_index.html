@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Library · Container Supply</title>
+<link rel="icon" type="image/png" href="csc-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#122150; --royal:#2540bf; --royal-700:#1c33a0; --sky:#eaf0fb; --sky-line:#d8e2f6;
+    --paper:#f4f7fc; --surface:#fff; --line:#dde4f1; --ink:#1b2333; --muted:#5a6479;
+    --shadow:0 1px 2px rgba(18,33,80,.05),0 8px 22px rgba(18,33,80,.06); --radius:11px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Source Sans 3',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.5}
+  .serif{font-family:'Source Serif 4',Georgia,serif}
+
+  header.topbar{background:var(--surface);border-bottom:1px solid var(--line);
+    box-shadow:0 1px 0 rgba(18,33,80,.04),0 6px 18px rgba(18,33,80,.04);position:sticky;top:0;z-index:50}
+  .topbar::before{content:'';display:block;height:4px;background:linear-gradient(90deg,var(--navy),var(--royal))}
+  .topbar-inner{max-width:1120px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:15px}
+  .topbar img.mark{height:46px;width:auto;display:block}
+  .co{font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:1.32rem;
+    letter-spacing:.04em;text-transform:uppercase;color:var(--navy);line-height:1.05}
+  .hub{font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--royal);font-weight:600;margin-top:3px}
+
+  .search-hero{background:var(--surface);border-bottom:1px solid var(--line)}
+  .search-hero-inner{max-width:1120px;margin:0 auto;padding:16px 28px}
+  .big-search{position:relative;width:100%}
+  .big-search svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:var(--muted);pointer-events:none}
+  .big-search input{width:100%;padding:13px 16px 13px 46px;border-radius:11px;border:1px solid var(--line);
+    background:var(--paper);font-family:inherit;font-size:1rem;color:var(--ink);transition:.15s}
+  .big-search input::placeholder{color:var(--muted)}
+  .big-search input:focus{outline:none;border-color:var(--royal);background:#fff;box-shadow:0 0 0 3px rgba(37,64,191,.12)}
+
+  .subbar{max-width:1120px;margin:0 auto;padding:16px 28px 0;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .back{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--royal);font-weight:600;font-size:.9rem}
+  .back:hover{color:var(--royal-700)}
+  .count{font-size:.82rem;color:var(--muted)}
+
+  main{max-width:1120px;margin:0 auto;padding:14px 28px 70px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  a.folder{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 16px;box-shadow:var(--shadow);transition:.15s}
+  a.folder:hover{border-color:var(--royal);transform:translateY(-2px);box-shadow:0 4px 14px rgba(18,33,80,.1)}
+  a.folder .ico{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:8px;background:var(--sky)}
+  a.folder .ico svg{width:19px;height:19px;fill:var(--royal)}
+  a.folder .nm{font-weight:600;color:var(--navy);font-size:.95rem;line-height:1.2;flex:1;min-width:0;word-break:break-word}
+  a.folder .arw{color:#b7c0d4;font-size:.9rem}
+  a.folder:hover .arw{color:var(--royal)}
+
+  .state{text-align:center;color:var(--muted);padding:44px 20px;font-size:.95rem}
+  .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--royal);border-radius:50%;
+    animation:spin .7s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .fallback{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:20px;margin-top:6px}
+  .fallback p{color:var(--muted);font-size:.9rem;margin-bottom:12px}
+  .fallback .btn{display:inline-block;background:var(--royal);color:#fff;text-decoration:none;
+    padding:9px 16px;border-radius:8px;font-weight:600;font-size:.9rem}
+  .fallback iframe{width:100%;height:420px;border:1px solid var(--line);border-radius:8px;margin-top:14px;background:#fff}
+
+  footer{background:var(--navy);color:rgba(255,255,255,.72)}
+  .foot{max-width:1120px;margin:0 auto;padding:22px 28px;font-size:.78rem;letter-spacing:.03em;
+    display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .foot a{color:#fff}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <img class="mark" src="csc-mark.png" alt="Container Supply logo">
+    <div><div class="co" id="title-co">Container Supply</div><div class="hub" id="title-hub">Document Library</div></div>
+  </div>
+</header>
+
+<section class="search-hero">
+  <div class="search-hero-inner">
+    <div class="big-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search" type="text" placeholder="Search folders…" autocomplete="off" disabled>
+    </div>
+  </div>
+</section>
+
+<div class="subbar">
+  <!-- If your homepage file is not named container-supply-info-hub.html, change this href. -->
+  <a class="back" href="container-supply-info-hub.html">&larr; Back to Info Hub</a>
+  <span class="count" id="count"></span>
+</div>
+
+<main>
+  <div id="state" class="state"><div class="spinner"></div>Loading folders…</div>
+  <div class="grid" id="grid" style="display:none"></div>
+</main>
+
+<footer>
+  <div class="foot">
+    <div>Container Supply Co. &bull; Internal Document Library</div>
+    <div><a id="open-drive" href="#" target="_blank" rel="noopener">Open the parent folder in Google Drive ↗</a></div>
+  </div>
+</footer>
+
+<script>
+/* =============================================================
+   EDIT THESE THREE VALUES
+   ============================================================= */
+const CFG = {
+  title:          'Document Library',                     // shown in the header + tab
+  feedUrl:        'https://script.google.com/a/macros/cscmfg.com/s/AKfycbz6aIkVhhF7WMpHLqQxxN68jIElVQgSdMlWFAiVWkEzcRhW_QtRW_yUw92W4y-ny7PO/exec',             // the Apps Script folder-index web app
+  parentFolderId: '1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk'      // used for the "open in Drive" link + fallback view
+};
+/* ============================================================= */
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const FOLDER_SVG = '<svg viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>';
+
+document.getElementById('title-hub').textContent = CFG.title;
+document.title = CFG.title + ' · Container Supply';
+document.getElementById('open-drive').href = 'https://drive.google.com/drive/folders/' + CFG.parentFolderId;
+
+let allFolders = [];
+
+function render(folders){
+  allFolders = folders;
+  const grid = document.getElementById('grid');
+  grid.innerHTML = folders.map(f =>
+    `<a class="folder" data-name="${esc((f.name||'').toLowerCase())}" href="${esc(f.url)}" target="_blank" rel="noopener">
+       <span class="ico">${FOLDER_SVG}</span>
+       <span class="nm">${esc(f.name||'(untitled)')}</span>
+       <span class="arw">↗</span>
+     </a>`).join('');
+  document.getElementById('state').style.display = 'none';
+  grid.style.display = 'grid';
+
+  const search = document.getElementById('search');
+  search.disabled = false;
+  search.addEventListener('input', applyFilter);
+  updateCount(folders.length, folders.length);
+}
+
+function applyFilter(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('a.folder').forEach(el => {
+    const hit = !q || el.dataset.name.includes(q);
+    el.style.display = hit ? '' : 'none';
+    if(hit) shown++;
+  });
+  updateCount(shown, allFolders.length);
+}
+
+function updateCount(shown, total){
+  document.getElementById('count').textContent =
+    (shown === total) ? (total + ' folder' + (total===1?'':'s')) : (shown + ' of ' + total + ' folders');
+}
+
+function showFallback(msg){
+  document.getElementById('state').innerHTML =
+    `<div class="fallback">
+       <p>${esc(msg)}</p>
+       <a class="btn" href="https://drive.google.com/drive/folders/${esc(CFG.parentFolderId)}" target="_blank" rel="noopener">Open folder in Google Drive ↗</a>
+       <iframe src="https://drive.google.com/embeddedfolderview?id=${esc(CFG.parentFolderId)}#list" title="Folder contents"></iframe>
+     </div>`;
+}
+
+function load(){
+  if(!/^https:\/\/script\.google\.com\//.test(CFG.feedUrl)){
+    showFallback('This page isn’t connected to its folder feed yet. Showing a live view of the folder below in the meantime.');
+    return;
+  }
+  const cb = '__folders_' + Math.random().toString(36).slice(2);
+  const url = CFG.feedUrl + (CFG.feedUrl.indexOf('?') > -1 ? '&' : '?') + 'callback=' + cb;
+  const script = document.createElement('script');
+  let settled = false;
+  const cleanup = () => { clearTimeout(timer); try{ delete window[cb]; }catch(e){ window[cb]=undefined; } script.remove(); };
+  const fail = () => { if(settled) return; settled = true; cleanup();
+    showFallback('Couldn’t load the folder list right now. You can browse the folder directly below.'); };
+  const timer = setTimeout(fail, 20000);
+  window[cb] = (resp) => {
+    if(settled) return; settled = true; cleanup();
+    if(resp && resp.ok && Array.isArray(resp.folders)) render(resp.folders);
+    else fail();
+  };
+  script.onerror = fail;
+  script.src = url;
+  document.head.appendChild(script);
+}
+load();
+</script>
+</body>
+</html>
