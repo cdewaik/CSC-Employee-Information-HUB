@@ -3,158 +3,603 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Document Library · Container Supply</title>
+<title>Container Supply Info Hub</title>
 <link rel="icon" type="image/png" href="csc-mark.png">
+
+<!-- ============================================================= -->
+<!--  FONTS                                                        -->
+<!-- ============================================================= -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
-  :root{
-    --navy:#122150; --royal:#2540bf; --royal-700:#1c33a0; --sky:#eaf0fb; --sky-line:#d8e2f6;
-    --paper:#f4f7fc; --surface:#fff; --line:#dde4f1; --ink:#1b2333; --muted:#5a6479;
-    --shadow:0 1px 2px rgba(18,33,80,.05),0 8px 22px rgba(18,33,80,.06); --radius:11px;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Source Sans 3',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.5}
+/* ===============================================================
+   THEME TOKENS  — colors are drawn from the company logo / brand.
+   Change them in ONE place here.
+   =============================================================== */
+:root{
+  --navy:       #122150;   /* deep brand navy (logo wordmark)        */
+  --navy-700:   #1b2f6b;
+  --royal:      #2540bf;    /* refined brand royal (logo mark)        */
+  --royal-700:  #1c33a0;
+  --sky:        #eaf0fb;    /* pale blue tint                         */
+  --sky-line:   #d8e2f6;
+  --paper:      #f4f7fc;    /* page background                        */
+  --surface:    #ffffff;    /* cards                                  */
+  --line:       #dde4f1;    /* hairline borders                       */
+  --ink:        #1b2333;    /* body text                              */
+  --muted:      #5a6479;    /* secondary text                         */
+  --green:      #2f8f5b;    /* status / new                           */
+  --red:        #c0392b;    /* not-compliant / alert                  */
+  --shadow:     0 1px 2px rgba(18,33,80,.05), 0 8px 22px rgba(18,33,80,.06);
+  --radius:     11px;
+}
 
-  header.topbar{background:var(--surface);border-bottom:1px solid var(--line);
-    box-shadow:0 1px 0 rgba(18,33,80,.04),0 6px 18px rgba(18,33,80,.04);position:sticky;top:0;z-index:50}
-  .topbar::before{content:'';display:block;height:4px;background:linear-gradient(90deg,var(--navy),var(--royal))}
-  .topbar-inner{max-width:1120px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:15px}
-  .topbar img.mark{height:46px;width:auto;display:block}
-  .co{font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:1.32rem;
-    letter-spacing:.04em;text-transform:uppercase;color:var(--navy);line-height:1.05}
-  .hub{font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--royal);font-weight:600;margin-top:3px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Source Sans 3',system-ui,sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  line-height:1.5;
+}
+.serif{font-family:'Source Serif 4',Georgia,serif}
 
-  .search-hero{background:var(--surface);border-bottom:1px solid var(--line)}
-  .search-hero-inner{max-width:1120px;margin:0 auto;padding:16px 28px}
-  .big-search{position:relative;width:100%}
-  .big-search svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:var(--muted);pointer-events:none}
-  .big-search input{width:100%;padding:13px 16px 13px 46px;border-radius:11px;border:1px solid var(--line);
-    background:var(--paper);font-family:inherit;font-size:1rem;color:var(--ink);transition:.15s}
-  .big-search input::placeholder{color:var(--muted)}
-  .big-search input:focus{outline:none;border-color:var(--royal);background:#fff;box-shadow:0 0 0 3px rgba(37,64,191,.12)}
+.kicker{
+  font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--royal);font-weight:600;
+}
 
-  .subbar{max-width:1120px;margin:0 auto;padding:16px 28px 0;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-  .back{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--royal);font-weight:600;font-size:.9rem}
-  .back:hover{color:var(--royal-700)}
-  .count{font-size:.82rem;color:var(--muted)}
+/* ===============================================================
+   TOP BAR
+   =============================================================== */
+header.topbar{
+  background:var(--surface);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(18,33,80,.04), 0 6px 18px rgba(18,33,80,.04);
+  position:sticky;top:0;z-index:50;
+}
+.topbar::before{content:'';display:block;height:4px;
+  background:linear-gradient(90deg,var(--navy),var(--royal));}
+.topbar-inner{
+  max-width:1240px;margin:0 auto;padding:14px 28px;
+  display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:15px;flex:1 1 auto;min-width:240px}
+.brand img.mark{height:46px;width:auto;display:block}
+.brand .wordmark{line-height:1.05}
+.brand .wordmark .co{
+  font-family:'Source Serif 4',Georgia,serif;font-weight:700;
+  font-size:1.32rem;letter-spacing:.04em;text-transform:uppercase;color:var(--navy);
+}
+.brand .wordmark .hub{
+  font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--royal);font-weight:600;margin-top:3px;
+}
 
-  main{max-width:1120px;margin:0 auto;padding:14px 28px 70px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-  a.folder{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);
-    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-    padding:14px 16px;box-shadow:var(--shadow);transition:.15s}
-  a.folder:hover{border-color:var(--royal);transform:translateY(-2px);box-shadow:0 4px 14px rgba(18,33,80,.1)}
-  a.folder .ico{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:8px;background:var(--sky)}
-  a.folder .ico svg{width:19px;height:19px;fill:var(--royal)}
-  a.folder .nm{font-weight:600;color:var(--navy);font-size:.95rem;line-height:1.2;flex:1;min-width:0;word-break:break-word}
-  a.folder .arw{color:#b7c0d4;font-size:.9rem}
-  a.folder:hover .arw{color:var(--royal)}
+.clock{
+  font-size:.78rem;color:var(--muted);text-align:right;line-height:1.45;white-space:nowrap;
+}
+.clock .time{color:var(--navy);font-weight:600;font-variant-numeric:tabular-nums}
+.clock .dot{color:var(--green)}
 
-  .empty{text-align:center;color:var(--muted);padding:44px 20px;font-size:.95rem;display:none}
-  .empty.show{display:block}
+.search-wrap{position:relative;flex:0 1 300px;min-width:200px}
+.search-wrap input{
+  width:100%;padding:10px 14px 10px 40px;border-radius:9px;border:1px solid var(--line);
+  background:var(--paper);color:var(--ink);font-family:inherit;font-size:.92rem;transition:.15s;
+}
+.search-wrap input::placeholder{color:var(--muted)}
+.search-wrap input:focus{outline:none;border-color:var(--royal);background:#fff;
+  box-shadow:0 0 0 3px rgba(37,64,191,.12)}
+.search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;stroke:var(--muted)}
 
-  footer{background:var(--navy);color:rgba(255,255,255,.72)}
-  .foot{max-width:1120px;margin:0 auto;padding:22px 28px;font-size:.78rem;letter-spacing:.03em;
-    display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
-  .foot a{color:#fff}
+/* ===============================================================
+   ANNOUNCEMENT
+   =============================================================== */
+.announce{max-width:1240px;margin:26px auto 0;padding:0 28px}
+.announce-card{
+  display:flex;gap:16px;align-items:flex-start;
+  background:var(--sky);
+  border:1px solid var(--sky-line);border-left:4px solid var(--royal);
+  border-radius:var(--radius);padding:18px 22px;
+}
+.announce-card .badge{
+  font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;
+  background:var(--royal);color:#fff;padding:5px 10px;border-radius:5px;
+  font-weight:600;flex:none;margin-top:1px;
+}
+.announce-card .body strong{display:block;font-size:1.04rem;margin-bottom:2px;color:var(--navy);
+  font-family:'Source Serif 4',Georgia,serif;font-weight:600}
+.announce-card .body span{font-size:.92rem;color:var(--muted)}
+
+/* ===============================================================
+   SECTIONS
+   =============================================================== */
+main{max-width:1240px;margin:0 auto;padding:30px 28px 70px}
+.section-head{display:flex;align-items:baseline;gap:14px;margin:34px 0 16px}
+.section-head .num{font-size:.82rem;color:var(--royal);font-weight:700;font-variant-numeric:tabular-nums}
+.section-head h2{
+  font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:1.5rem;
+  letter-spacing:.005em;color:var(--navy);
+}
+.section-head .rule{flex:1;height:1px;background:var(--line)}
+
+/* ── Company calendar embed ── */
+.cal-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden}
+.cal-card iframe{display:block;width:100%;border:0}
+@media(max-width:560px){.cal-card iframe{height:460px}}
+
+/* ── SQF live snapshot ── */
+.snap-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none;
+  box-shadow:0 0 0 0 rgba(47,157,91,.5);animation:pulse 2s infinite}
+.live-dot.stale{background:var(--muted);animation:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,157,91,.5)}70%{box-shadow:0 0 0 7px rgba(47,157,91,0)}100%{box-shadow:0 0 0 0 rgba(47,157,91,0)}}
+.snap-meta{font-size:.78rem;color:var(--muted);margin-left:auto;display:flex;align-items:center;gap:10px}
+.snap-meta a{color:var(--royal);text-decoration:none;font-weight:600}
+.snap-meta a:hover{text-decoration:underline}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.kpi-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:18px 20px;border-top:3px solid var(--royal)}
+.kpi-label{font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi-value{font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:2.2rem;
+  line-height:1.1;color:var(--navy);margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.kpi-desc{font-size:.82rem;color:var(--muted);line-height:1.35}
+.kpi-skeleton .kpi-value{color:var(--line)}
+.snap-error{background:var(--sky);border:1px solid var(--sky-line);border-radius:var(--radius);
+  padding:16px 20px;font-size:.9rem;color:var(--muted)}
+.snap-error a{color:var(--royal);font-weight:600;text-decoration:none}
+.snap-error a:hover{text-decoration:underline}
+
+/* ── Quick links ── */
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.quick{
+  display:flex;align-items:center;gap:13px;text-decoration:none;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;transition:.16s;box-shadow:var(--shadow);
+}
+.quick:hover{border-color:var(--royal);transform:translateY(-2px);
+  box-shadow:0 4px 14px rgba(18,33,80,.1)}
+.quick .ico{
+  width:36px;height:36px;flex:none;border-radius:9px;display:grid;place-items:center;
+  background:var(--sky);color:var(--royal);font-size:1.1rem;
+}
+.quick .label{font-weight:600;font-size:.93rem;line-height:1.15;color:var(--navy)}
+.quick .label small{display:block;font-weight:400;color:var(--muted);font-size:.74rem;margin-top:2px}
+
+/* ── Category cards ── */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(296px,1fr));gap:18px}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;
+  border-top-width:3px;border-top-style:solid;
+}
+.card-top{padding:15px 18px 13px;display:flex;align-items:center;gap:12px}
+.card-top h3{
+  font-family:'Source Serif 4',Georgia,serif;font-weight:600;font-size:1.18rem;
+  color:var(--navy);flex:1;line-height:1.15;
+}
+.card-top .tag{
+  font-size:.62rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;
+  border:1px solid var(--line);padding:3px 8px;border-radius:5px;font-weight:600;white-space:nowrap;
+}
+.card-links{list-style:none;padding:4px 8px 12px}
+.card-links li a{
+  display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);
+  padding:9px 12px;border-radius:8px;font-size:.93rem;transition:.13s;
+}
+.card-links li a:hover{background:var(--sky);color:var(--navy)}
+/* name + optional one-line description stack (used on the AI Resources card) */
+.card-links li a .lk-logo{width:22px;height:22px;flex:none;border-radius:5px;object-fit:contain;background:#fff}
+.card-links li a.withdesc .lk-logo{margin-top:2px}
+.card-links li a .lk-ico{width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;font-size:1.05rem;line-height:1}
+.card-links li a.withdesc .lk-ico{margin-top:1px}
+.card-links li a .lk-text{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.card-links li a.withdesc{align-items:flex-start}
+.card-links li a.withdesc .lk-name{font-weight:600;color:var(--navy)}
+.card-links li a .lk-desc{font-size:.76rem;line-height:1.32;color:var(--muted);font-weight:400}
+.card-links li a .arrow{margin-left:auto;color:#b7c0d4;transition:.13s;font-size:.9rem}
+.card-links li a.withdesc .arrow{margin-top:2px}
+.card-links li a:hover .arrow{color:var(--royal);transform:translateX(3px)}
+.card-links li a.ext .arrow::after{content:'\2197'}
+.card-links li a:not(.ext) .arrow::after{content:'\2192'}
+.pill-new{
+  font-size:.58rem;letter-spacing:.06em;background:var(--green);color:#fff;
+  padding:2px 7px;border-radius:4px;text-transform:uppercase;font-weight:700;
+}
+
+.no-results{display:none;text-align:center;color:var(--muted);padding:50px 0;font-size:.95rem}
+.no-results.show{display:block}
+
+/* ===============================================================
+   FOOTER
+   =============================================================== */
+footer{background:var(--navy);color:rgba(255,255,255,.72)}
+.footer-inner{
+  max-width:1240px;margin:0 auto;padding:24px 28px;
+  display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;
+  font-size:.78rem;letter-spacing:.03em;
+}
+.footer-brand{display:flex;align-items:center;gap:11px}
+.footer-brand img{height:30px;width:auto;opacity:.95}
+.footer-brand .ftxt{font-family:'Source Serif 4',Georgia,serif;letter-spacing:.05em;
+  text-transform:uppercase;color:#fff;font-weight:600;font-size:.82rem}
+.footer-inner a{color:#fff;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.3)}
+.footer-inner a:hover{border-color:#fff}
+.footer-meta{text-align:right;line-height:1.7;font-variant-numeric:tabular-nums}
+
+/* ── entrance animation ── */
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.reveal{opacity:0;animation:rise .5s ease forwards}
+
+@media(max-width:560px){
+  .topbar-inner{gap:14px}
+  .clock{display:none}
+  .brand .wordmark .co{font-size:1.12rem}
+  .footer-inner{flex-direction:column;align-items:flex-start}
+  .footer-meta{text-align:left}
+}
 </style>
 </head>
 <body>
+
+<!-- ============================================================= -->
+<!--  TOP BAR                                                      -->
+<!-- ============================================================= -->
 <header class="topbar">
   <div class="topbar-inner">
-    <img class="mark" src="csc-mark.png" alt="Container Supply logo">
-    <div><div class="co">Container Supply</div><div class="hub">Document Library</div></div>
+    <div class="brand">
+      <img class="mark" src="csc-mark.png" alt="Container Supply logo">
+      <div class="wordmark">
+        <div class="co">Container Supply</div>
+        <div class="hub">Employee Information Hub</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search" type="text" placeholder="Search the hub…" autocomplete="off">
+    </div>
+
+    <div class="clock" id="clock">
+      <div class="time" id="clock-time">—</div>
+      <div><span class="dot">●</span> <span id="clock-date">—</span></div>
+    </div>
   </div>
 </header>
 
-<section class="search-hero">
-  <div class="search-hero-inner">
-    <div class="big-search">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input id="search" type="text" placeholder="Search folders…" autocomplete="off">
-    </div>
-  </div>
-</section>
+<!-- ANNOUNCEMENT (rendered from CONFIG) -->
+<section class="announce" id="announce-mount"></section>
 
-<div class="subbar">
-  <a class="back" href="https://cdewaik.github.io/CSC-Employee-Information-HUB/container-supply-info-hub.html">&larr; Back to Info Hub</a>
-  <span class="count" id="count"></span>
-</div>
-
+<!-- MAIN CONTENT (rendered from CONFIG) -->
 <main>
-  <div class="grid" id="grid"></div>
-  <div class="empty" id="empty">No folders match your search.</div>
+
+  <!-- COMPANY CALENDAR (rendered from CONFIG.calendar) -->
+  <div id="cal-mount"></div>
+
+  <div class="section-head snap-head">
+    <span class="num">02</span>
+    <h2 class="serif">SQF Compliance Snapshot</h2>
+    <span class="live-dot" id="snap-dot" title="Live"></span>
+    <span class="snap-meta">
+      <span id="snap-updated">Loading…</span>
+      <a href="https://docs.google.com/spreadsheets/d/1ffBJfDU4q3Uet4jKrZOOlvFZWxLqEXXSjfbYmEpnIbI/edit" target="_blank" rel="noopener">Open dashboard ↗</a>
+    </span>
+  </div>
+  <div class="kpi-grid" id="kpi-mount">
+    <div class="kpi-card kpi-skeleton"><div class="kpi-label">Total Items</div><div class="kpi-value">—</div><div class="kpi-desc">Loading live data…</div></div>
+    <div class="kpi-card kpi-skeleton"><div class="kpi-label">% Compliant</div><div class="kpi-value">—</div><div class="kpi-desc">Loading live data…</div></div>
+    <div class="kpi-card kpi-skeleton"><div class="kpi-label">Compliant</div><div class="kpi-value">—</div><div class="kpi-desc">Loading live data…</div></div>
+    <div class="kpi-card kpi-skeleton"><div class="kpi-label">Not Compliant</div><div class="kpi-value">—</div><div class="kpi-desc">Loading live data…</div></div>
+  </div>
+
+  <div class="section-head">
+    <span class="num">03</span>
+    <h2 class="serif">Resources &amp; Reference</h2>
+    <span class="rule"></span>
+  </div>
+  <div class="cat-grid" id="cat-mount"></div>
+
+  <div class="no-results" id="no-results">No results match your search.</div>
 </main>
 
+<!-- FOOTER -->
 <footer>
-  <div class="foot">
-    <div>Container Supply Co. &bull; Internal Document Library</div>
-    <div><a href="https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk" target="_blank" rel="noopener">Open the parent folder in Google Drive ↗</a></div>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="csc-mark-white.png" alt="Container Supply">
+      <span class="ftxt">Container Supply Co.</span>
+    </div>
+    <div class="footer-meta">
+      Internal use only &bull; Garden Grove, CA<br>
+      Rev <span id="rev">1.1</span> &bull; Updated <span id="updated">—</span> &bull; <a href="mailto:webmaster@cscmfg.com">Report a broken link</a>
+    </div>
   </div>
 </footer>
 
+
 <script>
 /* ===================================================================
-   ██  THE FOLDER LIST — THIS IS THE ONLY PART YOU EDIT  ██
+   ███  EDIT EVERYTHING BELOW — THIS IS THE ONLY PART YOU TOUCH  ███
    -------------------------------------------------------------------
-   Each line is one folder:  { name: 'Folder name', url: 'https://…' }
+   To add a new page, add a line to the right list:
+     { name:'Page Title', href:'pages/your-file.html' }
 
-   The entries below are SAMPLES so the search works right away. Replace
-   them with your real folders. Easiest way: run the one-time script
-   "AppsScript_ListFolders.gs" (you press Run, you do NOT deploy it, so
-   there are no login/access settings), copy what it prints, and paste it
-   here in place of this whole list. Or just type each folder by hand.
+   • href = 'pages/foo.html'  -> a page you create (internal link, shows →)
+   • href = 'https://…'       -> an outside website (shows ↗ icon)
+   • add  new:true            -> shows a small green "NEW" tag
+   • add  ext:true            -> forces the external ↗ icon
+   • add  hrefMobile:'…'      -> opens a different URL on phones/tablets
+   • add  desc:'…'            -> a one-line description under the link (used on the AI Resources card)
+   • add  logo:'https://…'    -> a small site icon shown to the left of the link
+
+   Lines starting with // are notes to yourself and are ignored.
    =================================================================== */
-const FOLDERS = [
-  { name: 'Approved Supplier Program', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
-  { name: 'Corrective Actions (CAPA)', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
-  { name: 'HACCP & Food Safety Plans', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
-  { name: 'Internal Audits', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
-  { name: 'Pest Control', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
-  { name: 'Sanitation', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' },
-  { name: 'Training Records', url: 'https://drive.google.com/drive/folders/1JNShIf_49mBZ2HUdmTO7AZfsTUiV9IVk' }
-];
-/* =================================================================== */
 
+const CONFIG = {
+
+  /* footer info: bump these whenever you revise the page */
+  revision: '1.4',
+  updated:  'Jul 2026',
+
+  /* the banner at the top. Edit text or set show:false */
+  announcement: {
+    show:  true,
+    badge: 'New',
+    title: 'Welcome to the new Container Supply Info Hub.',
+    text:  'This page replaces the old employee portal and is now our central location for company communication, information, and helpful tools. Bookmark it and check back often for updates.'
+  },
+
+  /* COMPANY CALENDAR shown at the top of the page. Set show:false to hide it.
+     • src     = the calendar's ID (from your share link)
+     • mode    = 'MONTH', 'WEEK', or 'AGENDA' (list view)
+     • height  = pixel height of the embed
+     • viewUrl = the "Open in Google Calendar" button link */
+  calendar: {
+    show:    true,
+    title:   'Company Calendar',
+    src:     'c_qma7v98ietgu4q12bk3vabpjh8@group.calendar.google.com',
+    tz:      'America/Los_Angeles',
+    mode:    'MONTH',
+    height:  600,
+    viewUrl: 'https://calendar.google.com/calendar/u/0?cid=Y19xbWE3djk4aWV0Z3U0cTEyYmszdmFicGpoOEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t'
+  },
+
+  /* CATEGORY CARDS — each has a title, accent color, optional tag, and links.
+     A link may show either logo:'https://…' (a site icon) OR icon:'⚗' (an emoji). */
+  categories: [
+    {
+      title:'Safety & Compliance',
+      accent:'#2e7d32', tag:'SQF',
+      links:[
+        { name:'Training Portal', icon:'🎓', desc:'Watch trainings and take the comprehension tests.', href:'https://sites.google.com/cscmfg.com/csc/new-training-portal?authuser=0' },
+        { name:'SQF Action Item Tracker', logo:'data:image/svg+xml,%3Csvg%20version%3D%221.0%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%221080.000000pt%22%20height%3D%221080.000000pt%22%20viewBox%3D%220%200%201080.000000%201080.000000%22%20preserveAspectRatio%3D%22xMidYMid%20meet%22%3E%20%3Cg%20transform%3D%22translate%280.000000%2C1080.000000%29%20scale%280.100000%2C-0.100000%29%22%20fill%3D%22%230B82C6%22%20stroke%3D%22none%22%3E%20%3Cpath%20d%3D%22M3314%207716%20c-245%20-60%20-310%20-333%20-175%20-736%20c95%20-281%20296%20-654%20533%20-988%2050%20-71%2057%20-86%2045%20-95%20-9%20-7%20-18%20-27%20-22%20-44%20l-7%20-33%2054%20-1%2053%200%20121%20-157%20c140%20-182%20142%20-171%20-36%20-153%20-58%206%20-130%2012%20-160%2013%20l-55%202%200%20-39%200%20-40%2080%20-7%20c120%20-9%20305%20-28%20346%20-34%2029%20-5%2048%20-21%20110%20-92%2041%20-48%20114%20-131%20162%20-184%2062%20-69%2083%20-98%2070%20-98%20-16%200%20-166%2024%20-308%2050%20-193%2035%20-417%2071%20-420%2068%20-4%20-4%2011%20-77%2017%20-83%202%20-2%2030%20-8%2063%20-14%2033%20-6%20148%20-26%20255%20-46%20214%20-39%20266%20-49%20355%20-65%20183%20-32%20164%20-23%20273%20-134%2055%20-55%20161%20-161%20235%20-233%2075%20-73%20134%20-133%20131%20-133%20-3%200%20-80%2018%20-172%2040%20-241%2059%20-384%2094%20-577%20140%20-93%2023%20-226%2055%20-294%2071%20-67%2017%20-125%2028%20-128%2026%20-4%20-5%2024%20-64%2044%20-94%208%20-12%2087%20-34%20233%20-67%2041%20-10%20140%20-33%20220%20-51%20292%20-69%20448%20-106%20590%20-139%2080%20-19%20162%20-37%20182%20-41%2038%20-7%2074%20-30%20136%20-87%2021%20-18%2055%20-49%2077%20-68%20l40%20-34%200%20-181%200%20-180%20105%201%20c58%201%20149%209%20203%2019%20l99%2018%2046%20-33%20c488%20-346%20827%20-536%201141%20-640%20668%20-221%20919%2091%20641%20795%20-99%20249%20-285%20578%20-503%20889%20-57%2080%20-74%20113%20-68%20125%2014%2026%2059%20192%2067%20245%20l7%2049%20-194%20-7%20c-226%20-8%20-585%20-20%20-1139%20-36%20-217%20-7%20-397%20-14%20-399%20-16%20-2%20-2%20-6%20-73%20-9%20-159%20-4%20-139%20-7%20-155%20-22%20-155%20-17%200%20-112%2016%20-365%2060%20-66%2012%20-142%2025%20-169%2030%20-55%208%20-41%20-4%20-263%20235%20-61%2066%20-122%20134%20-136%20150%20l-25%2031%2076%20-7%20c43%20-4%20124%20-12%20182%20-18%2058%20-6%20152%20-15%20210%20-21%2058%20-6%20184%20-18%20280%20-28%20136%20-13%20249%20-16%20505%20-14%20728%206%201462%2019%201473%2026%208%205%2012%2050%2012%20150%20l0%20143%20-107%206%20c-259%2016%20-620%2038%20-768%2047%20-88%206%20-227%2015%20-310%2020%20-371%2023%20-555%2033%20-559%2029%20-2%20-2%20-8%20-73%20-12%20-156%20l-7%20-153%20-47%200%20c-44%200%20-219%2013%20-545%2040%20-66%205%20-185%2014%20-265%2020%20-202%2015%20-208%2016%20-230%2042%20-84%2098%20-252%20309%20-249%20312%2010%207%201485%20-14%201579%20-23%20112%20-10%20277%20-24%20505%20-40%20133%20-10%20259%20-20%20515%20-41%2063%20-5%20178%20-14%20255%20-20%2077%20-6%20164%20-13%20193%20-16%20l52%20-5%20-6%2043%20c-3%2024%20-13%2079%20-21%20123%20-9%2044%20-18%2094%20-20%20112%20-5%2035%200%2033%20-223%2068%20-52%208%20-165%2025%20-250%2039%20-199%2032%20-490%2078%20-700%20111%20-91%2014%20-232%2037%20-315%2050%20-82%2013%20-166%2025%20-185%2027%20l-35%203%203%20-167%203%20-168%20-298%200%20c-164%200%20-483%20-3%20-709%20-7%20l-412%20-6%20-77%20104%20c-458%20619%20-715%201199%20-641%201451%2085%20292%20628%20201%201344%20-224%20137%20-82%20171%20-108%20143%20-108%20-31%200%20-267%20-127%20-350%20-188%20-121%20-88%20-345%20-311%20-330%20-327%202%20-2%2051%207%20109%2020%20130%2028%20489%20105%20710%20151%2091%2019%20183%2039%20205%2044%20108%2025%20281%2060%20298%2060%2018%200%20348%20-90%20407%20-110%2022%20-8%20452%20-131%20525%20-150%2017%20-5%20131%20-37%20255%20-73%20124%20-35%20238%20-67%20254%20-71%20l29%20-7%20-18%2028%20c-77%20122%20-242%20297%20-370%20393%20-464%20349%20-1069%20452%20-1601%20274%20l-71%20-23%20-114%2075%20c-583%20386%20-1081%20569%20-1365%20500z%20m3778%20-2910%20c375%20-570%20573%20-1071%20529%20-1337%20-25%20-153%20-92%20-209%20-247%20-209%20-92%200%20-279%2048%20-409%20105%20-16%207%20-55%2023%20-85%2036%20-134%2057%20-384%20195%20-599%20331%20-209%20133%20-255%20168%20-220%20168%2016%200%20219%20103%20280%20142%20145%2093%20471%20398%20426%20398%20-2%200%20-46%20-9%20-98%20-20%20-52%20-11%20-148%20-31%20-214%20-45%20-66%20-13%20-163%20-34%20-215%20-45%20-52%20-11%20-149%20-31%20-215%20-45%20-147%20-30%20-343%20-72%20-376%20-79%20-18%20-5%20-36%204%20-76%2037%20l-51%2044%2096%2018%20c53%209%20158%2028%20232%2041%2074%2014%20158%2029%20185%2034%2087%2016%20228%2041%20285%2051%2030%205%2080%2014%20110%2020%2030%205%20135%2024%20234%2042%20l178%2032%2040%2065%20c44%2072%20138%20257%20138%20272%200%206%20-10%208%20-23%204%20-12%20-3%20-61%20-10%20-107%20-15%20-125%20-15%20-400%20-49%20-577%20-71%20-194%20-24%20-496%20-61%20-573%20-70%20-47%20-6%20-146%20-18%20-220%20-28%20l-135%20-17%20-5%20-128%20-5%20-128%20-110%2097%20c-60%2054%20-141%20128%20-180%20164%20-38%2037%20-96%2090%20-128%20120%20-31%2029%20-56%2054%20-55%2056%202%201%2026%20-2%2053%20-7%2064%20-13%20117%20-22%20294%20-54%20156%20-27%20148%20-27%20526%2016%20266%2030%20369%2042%20570%2064%2077%208%20178%2019%20225%2025%2047%206%20130%2015%20185%2021%2055%206%20127%2015%20160%2019%2033%204%2067%208%2075%208%209%201%2052%20-54%20102%20-132z%22%2F%3E%20%3Cpath%20d%3D%22M5380%206631%20l0%20-138%20-52%20-6%20c-29%20-4%20-84%20-11%20-123%20-16%20-38%20-6%20-160%20-22%20-270%20-36%20-110%20-15%20-229%20-30%20-265%20-35%20-36%20-5%20-155%20-21%20-265%20-35%20-110%20-15%20-229%20-31%20-265%20-36%20-36%20-4%20-108%20-13%20-160%20-19%20-120%20-14%20-136%20-21%20-155%20-66%20-8%20-20%20-14%20-38%20-13%20-40%203%20-2%2093%204%20343%2026%20132%2011%20266%2022%20545%2045%20102%208%20239%2019%20305%2025%20363%2031%20382%2032%20478%2015%2051%20-9%20198%20-34%20327%20-56%20129%20-22%20327%20-56%20440%20-75%20113%20-19%20295%20-50%20405%20-69%20110%20-19%20238%20-41%20285%20-49%20123%20-23%20120%20-23%20108%2022%20-5%2020%20-38%2096%20-73%20169%20l-64%20131%20-43%2010%20c-40%209%20-309%2078%20-613%20157%20-71%2019%20-227%2059%20-345%2089%20-118%2030%20-277%2071%20-353%2090%20-196%2051%20-177%2062%20-177%20-103z%22%2F%3E%20%3C%2Fg%3E%20%3C%2Fsvg%3E', desc:'Open SQF action items, owners, and due dates.', href:'sqf_action_item_tracker.html' },
+        { name:'SDS Lookup',      icon:'⚗',  desc:'Safety data sheets for chemicals used on site.', href:'https://drive.google.com/drive/folders/1NEEK_TiGOFLqBoL34-cnuJrVwd-naORT?usp=sharing', ext:true },
+        { name:'GotSafety', logo:'https://www.google.com/s2/favicons?domain=gotsafety.com&sz=64', desc:'Third-party safety & compliance portal — sign in.', href:'https://new.gotsafety.com/login', ext:true }
+      ]
+    },
+    {
+      title:'Operations & Dashboards',
+      accent:'#c77700', tag:'Live',
+      links:[
+        { name:'Maintenance Request', icon:'🔧', desc:'Submit a maintenance or repair request.', href:'https://sites.google.com/cscmfg.com/csc-tablet-dashboard/manager', hrefMobile:'https://sites.google.com/cscmfg.com/csc-tablet-dashboard/?pli=1&authuser=2', ext:true },
+        { name:'Inventory Dashboard', icon:'📦', desc:'Live finished-goods stock levels.', href:'https://script.google.com/a/macros/cscmfg.com/s/AKfycbxRTIkPv-Hsly1mO-VY4377fselSDH_WUI3MfSWb_T4UHZYLoVgSUKSVihAYKEBOFvlnw/exec', ext:true }
+      ]
+    },
+    {
+      title:'Company & People',
+      accent:'#6a3fb0', tag:'Staff',
+      links:[
+        { name:'Staff Directory', icon:'📞', desc:'Company phone & email directory (Google login required).', href:'https://contacts.google.com/directory' }
+      ]
+    },
+    {
+      title:'Document and Information Management (DIMS)',
+      accent:'#b45309', tag:'Drive',
+      links:[
+        { name:'Document Library', icon:'📁', desc:'Search all record folders and open any one.', href:'folder_index.html' },
+        { name:'FRM-004-002 Meeting Attendance', icon:'📝', desc:'Open the Drive folder, then drag & drop your scanned attendance forms in.', href:'https://drive.google.com/drive/folders/1LmxE9xKlUdg5tEoxfeTFJo_Tkuua9rFW?usp=sharing', ext:true },
+        { name:'FRM-018-003 Weekly Safety Inspection', icon:'🦺', desc:'Open the Drive folder, then drag & drop your scanned inspection forms in.', href:'https://drive.google.com/drive/folders/1T0F_Cei2f98fpG4WE4GLcMEYE1qGL2kR?usp=sharing', ext:true }
+      ]
+    },
+    {
+      title:'AI Resources',
+      accent:'#2540bf', tag:'AI',
+      links:[
+        { name:'Gemini & Nano Banana', logo:'https://www.google.com/s2/favicons?domain=gemini.google.com&sz=64', desc:'Run your Google apps — summarize email, build Sheets, schedule — and create images with Nano Banana.', href:'https://gemini.google.com', ext:true },
+        { name:'Claude',      logo:'https://www.google.com/s2/favicons?domain=claude.ai&sz=64',              desc:'Build finished documents, slide decks, and spreadsheets you can download.', href:'https://claude.ai', ext:true },
+        { name:'ChatGPT',     logo:'https://www.google.com/s2/favicons?domain=chatgpt.com&sz=64',            desc:'Learn a new skill, brainstorm ideas, and get answers to general questions.', href:'https://chatgpt.com', ext:true },
+        { name:'Copilot',     logo:'https://www.google.com/s2/favicons?domain=copilot.microsoft.com&sz=64',  desc:'AI help built into Microsoft Word, Excel, and Outlook.', href:'https://copilot.microsoft.com', ext:true }
+      ]
+    },
+    {
+      title:'Tools & Utilities',
+      accent:'#1f7a8c', tag:'Calc',
+      links:[
+        { name:'Warehouse Exhaust Fan Calculator', icon:'🌀', desc:'Sizing tool for warehouse exhaust fans.', href:'fancalc.html' },
+        { name:'BinMaster: BinCloud', logo:'data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Ctext%20x%3D%2732%27%20y%3D%2735%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27central%27%20font-family%3D%27Arial%2CHelvetica%2Csans-serif%27%20font-style%3D%27italic%27%20font-weight%3D%27700%27%20font-size%3D%2754%27%20fill%3D%27%23CE1126%27%3EB%3C%2Ftext%3E%3C%2Fsvg%3E', desc:'Plastic Resin Silo Inventory', href:'https://bincloud.binmaster.com/AuthorizationServer/Account/Login?ReturnUrl=%2FAuthorizationServer%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Dbincloud-client%26redirect_uri%3Dhttps%253A%252F%252Fbincloud.binmaster.com%26response_type%3Dcode%26scope%3Dopenid%2520profile%2520read%2520write%2520delete%26state%3D9df0d2e8dedc40a29f28d5bcd6c55efb%26code_challenge%3D5wthMfgIG4ZqF4rp9CxfGQQbX-sMt-k8NiQzuRgnLvk%26code_challenge_method%3DS256%26response_mode%3Dquery', ext:true }
+      ]
+    }
+  ]
+};
+
+/* ===================================================================
+   ███  RENDER ENGINE — no need to edit anything below this line  ███
+   =================================================================== */
 (function(){
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const FOLDER_SVG = '<svg viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>';
+  const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-  const grid   = document.getElementById('grid');
-  const empty  = document.getElementById('empty');
-  const count  = document.getElementById('count');
-  const search = document.getElementById('search');
+  document.getElementById('rev').textContent = CONFIG.revision;
+  document.getElementById('updated').textContent = CONFIG.updated || '';
 
-  const items = FOLDERS.slice().sort((a,b) =>
-    String(a.name).localeCompare(String(b.name), undefined, {numeric:true, sensitivity:'base'}));
-
-  grid.innerHTML = items.map(f =>
-    `<a class="folder" data-name="${esc(String(f.name||'').toLowerCase())}" href="${esc(f.url||'#')}" target="_blank" rel="noopener">
-       <span class="ico">${FOLDER_SVG}</span>
-       <span class="nm">${esc(f.name||'(untitled)')}</span>
-       <span class="arw">↗</span>
-     </a>`).join('');
-
-  const cards = Array.prototype.slice.call(grid.querySelectorAll('a.folder'));
-
-  function apply(){
-    const q = search.value.trim().toLowerCase();
-    let shown = 0;
-    cards.forEach(el => {
-      const hit = !q || el.getAttribute('data-name').indexOf(q) > -1;
-      el.style.display = hit ? '' : 'none';
-      if(hit) shown++;
-    });
-    empty.classList.toggle('show', shown === 0);
-    count.textContent = (shown === items.length)
-      ? items.length + ' folder' + (items.length===1?'':'s')
-      : shown + ' of ' + items.length + ' folders';
+  const a = CONFIG.announcement;
+  if(a && a.show){
+    document.getElementById('announce-mount').innerHTML =
+      `<div class="announce-card reveal">
+         <span class="badge">${esc(a.badge||'Notice')}</span>
+         <div class="body"><strong>${esc(a.title||'')}</strong><span>${esc(a.text||'')}</span></div>
+       </div>`;
   }
 
-  search.addEventListener('input', apply);
-  apply();
+  /* company calendar embed */
+  const cal = CONFIG.calendar;
+  if(cal && cal.show && cal.src){
+    const params = new URLSearchParams({
+      src:   cal.src,
+      ctz:   cal.tz || 'America/Los_Angeles',
+      mode:  (cal.mode || 'MONTH').toUpperCase(),
+      showTitle:'0', showPrint:'0', showCalendars:'0', showTz:'0',
+      wkst:'1', bgcolor:'#ffffff'
+    });
+    const embed = 'https://calendar.google.com/calendar/embed?' + params.toString();
+    const view  = cal.viewUrl || ('https://calendar.google.com/calendar/u/0?cid=' + btoa(cal.src));
+    document.getElementById('cal-mount').innerHTML =
+      `<div class="section-head">
+         <span class="num">01</span>
+         <h2 class="serif">${esc(cal.title||'Calendar')}</h2>
+         <span class="snap-meta"><a href="${esc(view)}" target="_blank" rel="noopener">Open in Google Calendar ↗</a></span>
+       </div>
+       <div class="cal-card reveal">
+         <iframe src="${esc(embed)}" width="100%" height="${parseInt(cal.height,10)||600}" frameborder="0" scrolling="no" title="${esc(cal.title||'Calendar')}"></iframe>
+       </div>`;
+  }
+
+  /* detect phones/tablets so links with an hrefMobile can open a different URL */
+  const IS_MOBILE = (function(){
+    const ua = navigator.userAgent || '';
+    if(/Mobi|Android|iPhone|iPod|IEMobile|BlackBerry/i.test(ua)) return true;
+    if(/iPad|Tablet/i.test(ua)) return true;
+    if(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;   // iPadOS
+    if(window.matchMedia && window.matchMedia('(pointer: coarse)').matches && window.innerWidth <= 1024) return true;
+    return false;
+  })();
+
+  document.getElementById('cat-mount').innerHTML = CONFIG.categories.map((cat,i)=>{
+    const accent = esc(cat.accent||'#2540bf');
+    const links = cat.links.map(l=>{
+      const href = (IS_MOBILE && l.hrefMobile) ? l.hrefMobile : (l.href||'#');
+      const isExt = l.ext || /^https?:\/\//.test(href);
+      const cls = [isExt?'ext':'', l.desc?'withdesc':''].filter(Boolean).join(' ');
+      const media = l.logo
+        ? `<img class="lk-logo" src="${esc(l.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+        : (l.icon ? `<span class="lk-ico">${esc(l.icon)}</span>` : '');
+      return `<li><a class="${cls}" href="${esc(href)}" ${isExt?'target="_blank" rel="noopener"':''}>
+                ${media}
+                <span class="lk-text"><span class="lk-name">${esc(l.name)}</span>${l.desc?`<small class="lk-desc">${esc(l.desc)}</small>`:''}</span>
+                ${l.new?'<span class="pill-new">New</span>':''}
+                <span class="arrow"></span>
+              </a></li>`;
+    }).join('');
+    return `<div class="card reveal" data-card style="border-top-color:${accent};animation-delay:${i*60}ms">
+              <div class="card-top">
+                <h3>${esc(cat.title)}</h3>
+                ${cat.tag?`<span class="tag">${esc(cat.tag)}</span>`:''}
+              </div>
+              <ul class="card-links">${links}</ul>
+            </div>`;
+  }).join('');
+
+  /* live clock — Pacific time */
+  function tick(){
+    const now = new Date();
+    const o = {timeZone:'America/Los_Angeles'};
+    document.getElementById('clock-time').textContent =
+      now.toLocaleTimeString('en-US',{...o,hour:'2-digit',minute:'2-digit'});
+    document.getElementById('clock-date').textContent =
+      now.toLocaleDateString('en-US',{...o,weekday:'short',month:'short',day:'numeric'});
+  }
+  tick(); setInterval(tick,1000);
+
+  /* search filter */
+  const input = document.getElementById('search');
+  const noRes = document.getElementById('no-results');
+  input.addEventListener('input', ()=>{
+    const q = input.value.trim().toLowerCase();
+    let anyVisible = false;
+    document.querySelectorAll('[data-card]').forEach(card=>{
+      const title = card.querySelector('h3').textContent.toLowerCase();
+      let matchInCard = false;
+      card.querySelectorAll('.card-links li').forEach(li=>{
+        const hit = !q || li.textContent.toLowerCase().includes(q) || title.includes(q);
+        li.style.display = hit ? '' : 'none';
+        if(hit) matchInCard = true;
+      });
+      card.style.display = (matchInCard || !q) ? '' : 'none';
+      if(card.style.display !== 'none') anyVisible = true;
+    });
+    noRes.classList.toggle('show', q && !anyVisible);
+  });
+
+  /* ===============================================================
+     SQF COMPLIANCE SNAPSHOT — live values from the Google Sheet
+     ---------------------------------------------------------------
+     Loads via a <script> tag (JSONP) so it isn't blocked by the
+     browser's cross-origin rules. To point it at a different
+     sheet/tab/range, edit these three:
+  =============================================================== */
+  const SQF = {
+    sheetId: '1I0yu-h6S28PglpIB8qich_cFq5l_A_PnpN7d6ayQXGk',
+    tab:     'Dashboard',
+    range:   'A1:I12',        // generous range; the 3-row KPI block is located automatically
+    refreshMinutes: 10        // how often to re-pull, in minutes
+  };
+  /* the four KPIs sit in columns B, D, F, H (counted from column A = 0) */
+  const KPI_COLS = [1, 3, 5, 7];
+  const KPI_ACCENTS = ['var(--navy)', 'var(--royal)', 'var(--green)', 'var(--red)'];
+
+  function loadSQF(){
+    const dot = document.getElementById('snap-dot');
+    const updated = document.getElementById('snap-updated');
+    const mount = document.getElementById('kpi-mount');
+    const cb = '__sqf_' + Math.random().toString(36).slice(2);
+    const url = `https://docs.google.com/spreadsheets/d/${SQF.sheetId}/gviz/tq`
+              + `?sheet=${encodeURIComponent(SQF.tab)}&range=${SQF.range}&headers=0&tqx=responseHandler:${cb}`;
+    const script = document.createElement('script');
+    let settled = false;
+
+    const cleanup = () => { clearTimeout(timer); try{ delete window[cb]; }catch(e){ window[cb]=undefined; } script.remove(); };
+    const fail = () => {
+      if(settled) return; settled = true; cleanup();
+      dot.classList.add('stale');
+      updated.textContent = 'Live data unavailable';
+      mount.innerHTML =
+        `<div class="snap-error" style="grid-column:1/-1">
+           Couldn't load live figures from the SQF dashboard right now.
+           <a href="https://docs.google.com/spreadsheets/d/1ffBJfDU4q3Uet4jKrZOOlvFZWxLqEXXSjfbYmEpnIbI/edit" target="_blank" rel="noopener">Open the dashboard directly ↗</a>
+         </div>`;
+    };
+    const ok = (resp) => {
+      if(settled) return; settled = true; cleanup();
+      try{
+        const rows = (resp && resp.table && resp.table.rows) || [];
+        const valOf = (r, i) => { const c = rows[r] && rows[r].c && rows[r].c[i]; return c ? (c.f != null ? c.f : (c.v != null ? c.v : '')) : ''; };
+        let h = -1;
+        for(let r = 0; r < rows.length; r++){ if(String(valOf(r, 1)).trim() !== ''){ h = r; break; } }
+        if(h < 0 || h + 2 >= rows.length) throw new Error('no block');
+        mount.innerHTML = KPI_COLS.map((i, n) =>
+          `<div class="kpi-card" style="border-top-color:${KPI_ACCENTS[n]}">
+             <div class="kpi-label">${esc(valOf(h,   i))}</div>
+             <div class="kpi-value" style="color:${KPI_ACCENTS[n]}">${esc(valOf(h+1, i))}</div>
+             <div class="kpi-desc">${esc(valOf(h+2, i))}</div>
+           </div>`).join('');
+        dot.classList.remove('stale');
+        updated.textContent = 'Live · updated ' +
+          new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+      }catch(e){ fail(); }
+    };
+
+    const timer = setTimeout(fail, 20000);
+    window[cb] = (resp) => (resp && resp.status !== 'error') ? ok(resp) : fail();
+    script.onerror = fail;
+    script.src = url;
+    document.head.appendChild(script);
+  }
+  loadSQF();
+  setInterval(loadSQF, SQF.refreshMinutes * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) loadSQF(); });
 })();
 </script>
 </body>
